@@ -1,3 +1,19 @@
+/*
+** NOTE: Funções implementadas:
+** TODO: Completar cabeçalho
+** TODO: Quase tudo kjadfnsgiuhabfdgs
+** REVIEW: Conferir sintaxe das estruturas de dados
+ */
+
+/*
+** SCC0215 - Oraganização de arquivos
+** Trabalho 1
+**
+** Alunos:
+** - Marco Antônio Ribeiro de Toledo, RA: 11796419
+** - Clayton Miccas ..., RA: ...
+ */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -79,14 +95,26 @@ char *leLinha(FILE* entrada) { // função que lê string com tratamento
     return retorno;
 }
 
+// "CREATE TABLE" de veículos a partir do csv de entrada
+int criaTabelaVeiculos(char *entrada, char *saida) {
+    printf(":: %s %s\n", entrada, saida);
+    return 0;
+}
+
 int main(int argc, char **argv) {
     // Lê opção e dados necessários, chamando então função desejada
     int opcao;
     char *entrada = leLinha(stdin);
     sscanf(entrada, "%d", &opcao);
     switch (opcao) {
-        case 1:
+        // Funções [1] e [2] -> "CREATE TABLE"
+        case 1: {
+            char arqEntrada[100],
+                arqSaida[100];
+            sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
+            criaTabelaVeiculos(arqEntrada, arqSaida);
             break;
+        }
         case 2:
             break;
         case 3:
