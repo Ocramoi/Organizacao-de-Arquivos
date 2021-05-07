@@ -6,7 +6,7 @@
  */
 
 /*
-** SCC0215 - Oraganização de arquivos
+** SCC0215 - Organização de arquivos
 ** Trabalho 1
 **
 ** Alunos:
@@ -97,7 +97,6 @@ char *leLinha(FILE* entrada) { // função que lê string com tratamento
 
 // "CREATE TABLE" de veículos a partir do csv de entrada
 int criaTabelaVeiculos(char *entrada, char *saida) {
-    printf(":: %s %s\n", entrada, saida);
     return 0;
 }
 
