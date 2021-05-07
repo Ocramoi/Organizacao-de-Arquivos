@@ -1,2 +1,2 @@
 # Organizacao-de-Arquivos
-[PT] Trabalhos da disciplina SCC0215 - Organização de Arquivos
+Repositório colaborativo para os trabalhos da disciplina SCC015 - Organização de Arquivos.
