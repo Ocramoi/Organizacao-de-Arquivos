@@ -1,6 +1,7 @@
 /*
 ** NOTE: Funções implementadas:
 ** TODO: Completar cabeçalho
+** TODO: Adicionar binarioNaTela na estrutura do código (acho que a professora não disponibilizou ainda)
 ** TODO: Quase tudo kjadfnsgiuhabfdgs
 ** REVIEW: Conferir sintaxe das estruturas de dados
  */
@@ -97,6 +98,12 @@ char *leLinha(FILE* entrada) { // função que lê string com tratamento
 
 // "CREATE TABLE" de veículos a partir do csv de entrada
 int criaTabelaVeiculos(char *entrada, char *saida) {
+    FILE *arqEntrada = fopen(entrada, "rb"),
+        *arqSaida = fopen(saida, "wb+");
+    if (!arqEntrada || !arqSaida) {
+        printf("Falha no processamento do arquivo.\n");
+        return 1;
+    }
     return 0;
 }
 
@@ -111,7 +118,10 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                 arqSaida[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
-            criaTabelaVeiculos(arqEntrada, arqSaida);
+            if (criaTabelaVeiculos(arqEntrada, arqSaida))
+                printf("Função ok!\n"); // TODO: Substituir pelo binarioNaTela que ela vai passar
+            else
+                printf("Falha no processamento do arquivo.\n");
             break;
         }
         case 2:
