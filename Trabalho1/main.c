@@ -2,6 +2,52 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Estrutura dado do registro de cada veículo
+typedef struct {
+    char removido,
+        prefixo[5],
+        data[10];
+    int32_t tamanhoRegistro,
+        tamanhoModelo,
+        tamanhoCategoria,
+        quantidadeLugares,
+        codLinha;
+    char *modelo,
+        *categoria;
+} VEICULO_t;
+
+// Estrutura de dados da tabela de veículos
+typedef struct {
+    char status;
+    int64_t byteProxReg;
+    int32_t nroRegistros,
+        nroRegRemovidos;
+    char descrevePrefixo[18],
+        descreveData[35],
+        descreveLugares[42],
+        descreveLinha[26],
+        descreveModelo[17],
+        desceveCategoria[20];
+    VEICULO_t *veiculos;
+} VEICULOS_t;
+
+// Estrutura dado do registro de cada linha
+typedef struct {
+    int32_t tamanhoRegistro,
+        codLinha,
+        tamanhoNome,
+        tamanhoCor;
+    char removido,
+        aceitaCartao,
+        *nomeLinha,
+        *corLinha;
+} LINHA_t;
+
+// Estrutura de dados da tabela de veículos
+typedef struct {
+
+} LINHAS_t;
+
 #define STR_BUFFER 64 // buffer do realloc de string
 
 char *leLinha(FILE* entrada) { // função que lê string com tratamento
@@ -34,6 +80,35 @@ char *leLinha(FILE* entrada) { // função que lê string com tratamento
 }
 
 int main(int argc, char **argv) {
+    // Lê opção e dados necessários, chamando então função desejada
+    int opcao;
+    char *entrada = leLinha(stdin);
+    sscanf(entrada, "%d", &opcao);
+    switch (opcao) {
+        case 1:
+            break;
+        case 2:
+            break;
+        case 3:
+            break;
+        case 4:
+            break;
+        case 5:
+            break;
+        case 6:
+            break;
+        case 7:
+            break;
+        case 8:
+            break;
+        case 9:
+            break;
+        default:
+            printf("Opção digitada inválida!\n");
+            break;
+    }
 
+    // Libera memória dinamicamente alocada
+    free(entrada);
     return 0;
 }
