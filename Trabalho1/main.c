@@ -15,7 +15,7 @@
 **
 ** Alunos:
 ** - Marco Antônio Ribeiro de Toledo, RA: 11796419
-** - Clayton Miccas ..., RA: ...
+** - Clayton Miccas Junior, RA: 9292441
  */
 
 #include "LeLinha.h"
