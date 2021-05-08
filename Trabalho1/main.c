@@ -1,6 +1,5 @@
 /*
-** NOTE: Funções implementadas:
-** TODO: Completar cabeçalho
+** NOTE: Funções implementadas
 ** TODO: Adicionar binarioNaTela na estrutura do código (acho que a professora não disponibilizou ainda)
 ** TODO: Implementar escreveTabelaVeiculos em Veiculos.c
 ** TODO: Implementar adicionaVeiculo em Veiculos.c
