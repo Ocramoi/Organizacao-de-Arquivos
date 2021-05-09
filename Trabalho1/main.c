@@ -1,11 +1,16 @@
 /*
 ** NOTE: Funções implementadas
-** TODO: Adicionar binarioNaTela na estrutura do código (acho que a professora não disponibilizou ainda)
-** TODO: Implementar escreveTabelaVeiculos em Veiculos.c
+** TODO: Implementar escreveTabelaVeiculos em Veiculos.c 
 ** TODO: Implementar adicionaVeiculo em Veiculos.c
 ** TODO: Implementar estrutura das linhas individuais em Linhas.h
 ** REVIEW: Conferir criaTabelaVeiculos em Veiculos.c (estrutura passível de mudança pós implementação das outras funções)
 ** REVIEW: Conferir sintaxe e estrutura dos TADs
+** 
+** Comentarios Clayton: Adicionei a função binarioNaTela, estou implementando a [2] Linhas.c, estou usando o seu Veiculos.c como base assim cada um trabalha em uma parte. 
+** Hoje a noite vou dar uma boa codada kkk 
+**
+** Comentarios Marco:
+**
  */
 
 /*
@@ -20,6 +25,7 @@
 #include "LeLinha.h"
 #include "Veiculos.h"
 #include "Linhas.h"
+#include "BinarioNaTela.h"
 
 #include <stdio.h>
 #include <stdlib.h>
