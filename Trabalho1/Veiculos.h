@@ -3,7 +3,7 @@
 
 #include <stdlib.h>
 
-// Estrutura dado do registro de cada veículo
+// Estrutura dado do registro de cada veículo (Registro de Dados)
 typedef struct {
     char removido,
         prefixo[5],
@@ -17,7 +17,7 @@ typedef struct {
         *categoria;
 } VEICULO_t;
 
-// Estrutura de dados da tabela de veículos
+// Estrutura de dados da tabela de veículos (Registro de Cabeçalho)
 typedef struct {
     char status;
     int64_t byteProxReg;

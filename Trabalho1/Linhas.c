@@ -9,17 +9,17 @@ int escreveTabelaLinhas(FILE *arquivo, LINHAS_t *tabela) {
     return 0;
 }
 
-/* Adiciona veículo a partir de [registro] à [tabela] já criada */
-LINHA_t *adicionaLinhas(LINHAS_t *tabela, char *registro) {
-    // Estrutura para novo veículo a ser adicionado
+/* Adiciona linha a partir de [registro] à [tabela] já criada */
+LINHA_t *adicionaLinha(LINHAS_t *tabela, char *registro) {
+    // Estrutura para novo linha a ser adicionado
     LINHA_t *novo = malloc(sizeof(LINHA_t));
 
     // Retorna registro adicionado
     return novo;
 }
 
-/* "CREATE TABLE" de veículos a partir do csv de nome [entrada], salvando como o arquivo binário [saida] */
-int criaTabelaLinhass(char *entrada, char *saida) {
+/* "CREATE TABLE" de linhas a partir do csv de nome [entrada], salvando como o arquivo binário [saida] */
+int criaTabelaLinhas(char *entrada, char *saida) {
     // Abre arquivo de entrada a partir do nome
     FILE *arqEntrada = fopen(entrada, "rb");
     if (!arqEntrada) { // Confere falha na abertura dos arquivos
@@ -39,13 +39,11 @@ int criaTabelaLinhass(char *entrada, char *saida) {
     tabela->byteProxReg = 0;
     tabela->nroRegistros = 0;
     tabela->nroRegRemovidos = 0;
-    strncpy(tabela->descrevePrefixo, registro, 18); strtok(NULL, ",");
-    strncpy(tabela->descreveData, registro, 35); strtok(NULL, ",");
-    strncpy(tabela->descreveLugares, registro, 42); strtok(NULL, ",");
-    strncpy(tabela->descreveLinha, registro, 17); strtok(NULL, ",");
-    strncpy(tabela->descreveModelo, registro, 20); strtok(NULL, ",");
-    strncpy(tabela->descreveCategoria, registro, 26);
-    tabela->linhass = NULL;
+    strncpy(tabela->descreveCodigo, registro, 15); strtok(NULL, ",");
+    strncpy(tabela->descreveCartao, registro, 13); strtok(NULL, ",");
+    strncpy(tabela->descreveNome, registro, 13); strtok(NULL, ",");
+    strncpy(tabela->descreveLinha, registro, 24);
+    tabela->linhas = NULL;
 
     // Lê registros do csv linha a linha
     while (registro) {
