@@ -40,16 +40,28 @@ int main(int argc, char **argv) {
         // Funções [1] e [2] -> "CREATE TABLE"
         case 1: {
             char arqEntrada[100],
-                arqSaida[100];
+                 arqSaida[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
-            if (criaTabelaVeiculos(arqEntrada, arqSaida))
-                printf("Função ok!\n"); // TODO: Substituir pelo binarioNaTela que ela vai passar
+            if (criaTabelaVeiculos(arqEntrada, arqSaida)) {
+                printf("Função ok!\n"); 
+                FF_binarioNaTela(arqSaida); // Função binarioNaTela desenvolvida pela Professora
+            }
             else
                 printf("Falha no processamento do arquivo.\n");
             break;
         }
-        case 2:
+        case 2: {
+            char arqEntrada[100],
+                 arqSaida[100];
+            sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
+            if (criaTabelaLinhas(arqEntrada, arqSaida)) {
+                printf("Função ok!\n"); 
+                FF_binarioNaTela(arqSaida); // Função binarioNaTela desenvolvida pela Professora
+            }
+            else
+                printf("Falha no processamento do arquivo.\n");
             break;
+        }
         case 3:
             break;
         case 4:

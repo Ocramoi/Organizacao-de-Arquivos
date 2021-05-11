@@ -13,6 +13,31 @@ int escreveTabelaLinhas(FILE *arquivo, LINHAS_t *tabela) {
 LINHA_t *adicionaLinha(LINHAS_t *tabela, char *registro) {
     // Estrutura para novo linha a ser adicionado
     LINHA_t *novo = malloc(sizeof(LINHA_t));
+    // Inicia tokenização do csv
+    char *token;
+   
+    // Cria nova estrutura para a linha a ser lida e popula dados
+    novo->removido = 1;
+    token = strsep(&registro, ",");
+    strcpy(novo->codLinha, token);
+    printf("Codigo: %s\n",novo->codLinha);
+    token = strsep(&registro, ",");
+    strcpy(novo->aceitaCartao, token);
+    printf("Aceita Cartao: %s\n",novo->aceitaCartao);
+    token = strsep(&registro, ",");
+    strcpy(novo->nomeLinha, token); 
+    printf("Nome Linha: %s\n",novo->nomeLinha);
+    token = strsep(&registro, ",");
+    strcpy(novo->corLinha, token);
+    printf("Nome cor: %s\n",novo->corLinha);
+
+    //Calcula o tamanho dos registros != de calcular o tamanho da struct
+    novo->tamanhoNome = strlen(novo->nomeLinha);
+    novo->tamanhoCor = strlen(novo->corLinha);
+    novo->tamanhoRegistro = strlen(novo->codLinha)+strlen(novo->aceitaCartao)+novo->tamanhoNome+novo->tamanhoCor ;
+    printf("Tamanho total: %d Tamanho Nome: %d  Tamanho Cor: %d \n", novo->tamanhoRegistro, novo->tamanhoNome, novo->tamanhoCor);
+    printf("\n");
+   
 
     // Retorna registro adicionado
     return novo;
@@ -31,7 +56,7 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     // Lê cabeçalho do arquivo de entrada
     char *registro = leLinha(arqEntrada);
     // Inicia tokenização do csv
-    strtok(registro, ",");
+    char *variavel;    
 
     // Cria nova estrutura para a tabela a ser lida e popula dados
     LINHAS_t *tabela = malloc(sizeof(LINHAS_t));
@@ -39,21 +64,38 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     tabela->byteProxReg = 0;
     tabela->nroRegistros = 0;
     tabela->nroRegRemovidos = 0;
-    strncpy(tabela->descreveCodigo, registro, 15); strtok(NULL, ",");
-    strncpy(tabela->descreveCartao, registro, 13); strtok(NULL, ",");
-    strncpy(tabela->descreveNome, registro, 13); strtok(NULL, ",");
-    strncpy(tabela->descreveLinha, registro, 24);
+    printf("Registro de Cabecalho: %d %ld %d %d ", tabela->status, tabela->byteProxReg, tabela->nroRegistros, tabela->nroRegRemovidos);
+    variavel = strsep(&registro, ",");
+    strcpy(tabela->descreveCodigo, variavel);
+    printf("%s ",tabela->descreveCodigo);
+    variavel = strsep(&registro, ",");
+    strcpy(tabela->descreveCartao, variavel);
+    printf("%s ",tabela->descreveCartao);
+    variavel = strsep(&registro, ",");
+    strcpy(tabela->descreveNome, variavel);
+    printf("%s ",tabela->descreveNome);
+    variavel = strsep(&registro, ",");
+    strcpy(tabela->descreveLinha, variavel);
+    printf("%s\n\n",tabela->descreveLinha);
     tabela->linhas = NULL;
 
+    
+    
+    //Libera registro e posiciona o ponteiro no inicio do arquivo
+    free(registro);
+    fseek(arqEntrada, 0, SEEK_SET);
+    registro = leLinha(arqEntrada);
+    
     // Lê registros do csv linha a linha
     while (registro) {
         free(registro);
         registro = leLinha(arqEntrada);
         if (!registro) break;
-
-        if (adicionaLinha(tabela, registro))
-            printf("Erro na inserção de registro!\n");
+        if (adicionaLinha(tabela, registro)){}
+            //printf("Erro na inserção de registro!\n"); //flag
     }
+
+
     // Fecha arquivo de entrada
     fclose(arqEntrada);
 

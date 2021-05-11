@@ -6,13 +6,13 @@
 // Estrutura dado do registro de cada linha (Registro de Dados)
 typedef struct {
     int32_t tamanhoRegistro,
-        codLinha,
         tamanhoNome,
         tamanhoCor;
     char removido,
-        aceitaCartao,
-        *nomeLinha,
-        *corLinha;
+        codLinha[4],
+        aceitaCartao[1],
+        nomeLinha[100],
+        corLinha[100];
 } LINHA_t;
 
 // Estrutura de dados da tabela de linhas (Registro de Cabeçalho)
