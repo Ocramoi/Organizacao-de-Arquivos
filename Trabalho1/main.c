@@ -2,12 +2,12 @@
 ** NOTE: Funções implementadas
 ** TODO: Implementar escreveTabelaVeiculos em Veiculos.c 
 ** TODO: Implementar adicionaVeiculo em Veiculos.c
-** TODO: Implementar estrutura das linhas individuais em Linhas.h
+** TODO: Implementar escrita das linhas no binário
 ** REVIEW: Conferir criaTabelaVeiculos em Veiculos.c (estrutura passível de mudança pós implementação das outras funções)
 ** REVIEW: Conferir sintaxe e estrutura dos TADs
 ** 
-** Comentarios Clayton: Adicionei a função binarioNaTela, estou implementando a [2] Linhas.c, estou usando o seu Veiculos.c como base assim cada um trabalha em uma parte. 
-** Hoje a noite vou dar uma boa codada kkk 
+** Comentarios Clayton: Adicionei a função binarioNaTela, estou implementando a [2] Linhas.c, começarei a implementar a escrita no binário
+** 
 **
 ** Comentarios Marco:
 **
