@@ -24,7 +24,6 @@ int destroiTabelaVeiculos(VEICULOS_t *tabela) {
     if (!tabela)
         return 1;
 
-    // Inicializa valor de retorno para sucesso
     int retorno = 0;
 
     // Libera cada registro individualmente e o ponteiro da lista
@@ -34,9 +33,7 @@ int destroiTabelaVeiculos(VEICULOS_t *tabela) {
             retorno = 1;
     } free(tabela->veiculos);
 
-    // Libera memória fixa
     free(tabela);
-
     return retorno;
 }
 
@@ -91,7 +88,9 @@ VEICULO_t *adicionaVeiculo(VEICULOS_t *tabela, char *registro) {
 
     // Registra se registro foi removido
     if (tempLeitura[0] == '*')
-        novo->removido = 0;
+        novo->removido = '0';
+    else
+        novo->removido = '1';
 
     // Copia prefixo de tamanho fixo (não nulo por padrão)
     memcpy(novo->prefixo, tempLeitura, 5); strtok(NULL, ",");
@@ -146,7 +145,7 @@ VEICULO_t *adicionaVeiculo(VEICULOS_t *tabela, char *registro) {
     // Adiciona registro criado à tabela e atualiza informações dessa
     tabela->byteProxReg += novo->tamanhoRegistro;
     tabela->nroRegistros += 1;
-    tabela->nroRegRemovidos += !novo->removido;
+    tabela->nroRegRemovidos += !(novo->removido - '0');
     tabela->veiculos = realloc(tabela->veiculos, tabela->nroRegistros * sizeof(VEICULO_t*));
     tabela->veiculos[tabela->nroRegistros - 1] = novo;
 
@@ -171,8 +170,8 @@ int criaTabelaVeiculos(char *entrada, char *saida) {
 
     // Cria nova estrutura para a tabela a ser lida e popula dados
     VEICULOS_t *tabela = malloc(sizeof(VEICULOS_t));
-    tabela->status = 0;
-    tabela->byteProxReg = 0;
+    tabela->status = '0';
+    tabela->byteProxReg = 175;
     tabela->nroRegistros = 0;
     tabela->nroRegRemovidos = 0;
     strncpy(tabela->descrevePrefixo, registro, 18); strtok(NULL, ",");
@@ -195,7 +194,7 @@ int criaTabelaVeiculos(char *entrada, char *saida) {
     // Fecha arquivo de entrada
     fclose(arqEntrada);
 
-    tabela->status = 1; // TODO: Conferir se o status da tabela tá sendo indicado de acordo com especifiações ujiadfsguiabguib
+    tabela->status = '1';
 
     // Código para tratamento de retorno
     int retorno = 0;

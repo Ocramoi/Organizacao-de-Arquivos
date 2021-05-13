@@ -29,7 +29,7 @@
  */
 
 #include "LeLinha.h"
-#include "Veiculos.h"
+#include "VeiculosARQ.h"
 #include "Linhas.h"
 #include "BinarioNaTela.h"
 
@@ -48,15 +48,8 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                  arqSaida[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
-<<<<<<< HEAD
-            if (criaTabelaVeiculos(arqEntrada, arqSaida)) {
-                printf("Função ok!\n"); 
-                FF_binarioNaTela(arqSaida); // Função binarioNaTela desenvolvida pela Professora
-            }
-=======
-            if (criaTabelaVeiculos(arqEntrada, arqSaida))
+            if (criaTabelaVeiculosARQ(arqEntrada, arqSaida))
                 FF_binarioNaTela(arqSaida);
->>>>>>> 0c2023716071dfb0db7d43271c4bbab375709680
             else
                 printf("Falha no processamento do arquivo.\n");
             break;
@@ -65,10 +58,8 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                  arqSaida[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
-            if (criaTabelaLinhas(arqEntrada, arqSaida)) {
-                printf("Função ok!\n"); 
+            if (criaTabelaLinhas(arqEntrada, arqSaida))
                 FF_binarioNaTela(arqSaida); // Função binarioNaTela desenvolvida pela Professora
-            }
             else
                 printf("Falha no processamento do arquivo.\n");
             break;
