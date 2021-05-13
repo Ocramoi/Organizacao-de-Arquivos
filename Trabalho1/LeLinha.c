@@ -21,11 +21,11 @@ char *leLinha(FILE* entrada) {
 
     if (cont >= 2 && retorno[cont - 2] == '\r') { // confere pelo caracter de formatação '\r'
         retorno[cont - 2] = '\0'; // substitui o caracter por fim de string
-        retorno = (char* ) realloc(retorno, (cont-1) * sizeof(char)); // diminui o tamanho da string em 1 caracter
+        retorno = realloc(retorno, (cont-1) * sizeof(char)); // diminui o tamanho da string em 1 caracter
     }
     else {
         retorno[cont-1] = '\0'; // formata a string com o caracter de final de string
-        retorno = (char* ) realloc(retorno, cont * sizeof(char)); // realoca o ponteiro da string para seu tamanho desconsiderando o buffer
+        retorno = realloc(retorno, cont * sizeof(char)); // realoca o ponteiro da string para seu tamanho desconsiderando o buffer
     }
 
     // Trata retorno

@@ -5,7 +5,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* Adiciona veículo a partir de [registro] ao arquivo [tabela] já criado */
+/* Adiciona veículo a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
     // Erro de ponteiros
     if (!tabela || !registro || !offset)
@@ -20,21 +20,21 @@ int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
     else
         controleRemovido = 0;
     fwrite(controleRemovido ? "0" : "1", sizeof(char), 1, tabela);
-    fwrite(tempLeitura, sizeof(char), 5, tabela); strtok(NULL, ",");
+    fwrite(tempLeitura, sizeof(char), 5, tabela); tempLeitura = strtok(NULL, ",");
 
     // Escreve strings tratando NULO quando necessário e registrando informações numéricas
     if (!strcmp(tempLeitura, "NULO"))
         fwrite("\0@@@@@@@@@", sizeof(char), 10, tabela);
     else
         fwrite(tempLeitura, sizeof(char), 10, tabela);
-    strtok(NULL, ",");
+    tempLeitura = strtok(NULL, ",");
 
     int32_t controleLugares;
     if (!strcmp(tempLeitura, "NULO"))
         controleLugares = -1;
     else
         controleLugares = atoi(tempLeitura);
-    strtok(NULL, ",");
+    tempLeitura = strtok(NULL, ",");
     fwrite(&controleLugares, sizeof(int32_t), 1, tabela);
 
     int32_t controleLinha;
@@ -42,7 +42,7 @@ int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
         controleLinha = -1;
     else
         controleLinha = atoi(tempLeitura);
-    strtok(NULL, ",");
+    tempLeitura = strtok(NULL, ",");
     fwrite(&controleLinha, sizeof(int32_t), 1, tabela);
 
     int32_t controleModelo;
@@ -50,16 +50,18 @@ int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
         controleModelo = 0;
     else
         controleModelo = strlen(tempLeitura);
-    strtok(NULL, ",");
+    fwrite(&controleModelo, sizeof(int32_t), 1, tabela);
     fwrite(tempLeitura, sizeof(char), controleModelo, tabela);
+    tempLeitura = strtok(NULL, ",");
 
     int32_t controleCat;
     if (!strcmp(tempLeitura, "NULO"))
         controleCat = 0;
     else
         controleCat = strlen(tempLeitura);
-    strtok(NULL, ",");
+    fwrite(&controleCat, sizeof(int32_t), 1, tabela);
     fwrite(tempLeitura, sizeof(char), controleCat, tabela);
+    tempLeitura = strtok(NULL, ",");
 
     // Contabiliza tamanho do registro
     *offset += 36 + controleModelo + controleCat;
@@ -71,18 +73,19 @@ int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
 /* "CREATE TABLE" de veículos a partir do csv de nome [entrada], salvando como o arquivo binário [saida] (sem memória auxiliar) */
 int criaTabelaVeiculosARQ(char *entrada, char *saida) {
     // Abre arquivos a partir do nome
-    FILE *arqEntrada = fopen(entrada, "rb"),
+    FILE *arqEntrada = fopen(entrada, "r"),
         *arqSaida = fopen(saida, "wb+");
     if (!arqEntrada) { // Confere falha na abertura dos arquivos
         // Fecha arquivos e retorna erro;
         fclose(arqEntrada); fclose(arqSaida);
+        printf("::: 81\n");
         return 1;
     }
 
     // Lê cabeçalho do arquivo de entrada
-    char *registro = leLinha(arqEntrada);
-    // Inicia tokenização do csv
-    strtok(registro, ",");
+    char *tempRegistro = leLinha(arqEntrada),
+        // Inicia tokenização do csv
+        *registro = strtok(tempRegistro, ",");
 
     // Inicializa cabeçalho
     int64_t proxInit = 175;
@@ -91,23 +94,25 @@ int criaTabelaVeiculosARQ(char *entrada, char *saida) {
     fwrite(&proxInit, sizeof(int64_t), 1, arqSaida);
     fwrite(&nRegInit, sizeof(int32_t), 1, arqSaida);
     fwrite(&nRegInit, sizeof(int32_t), 1, arqSaida);
-    fwrite(registro, sizeof(char), 18, arqSaida); strtok(NULL, ",");
-    fwrite(registro, sizeof(char), 35, arqSaida); strtok(NULL, ",");
-    fwrite(registro, sizeof(char), 42, arqSaida); strtok(NULL, ",");
-    fwrite(registro, sizeof(char), 26, arqSaida); strtok(NULL, ",");
-    fwrite(registro, sizeof(char), 17, arqSaida); strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 18, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 35, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 42, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 26, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 17, arqSaida); registro = strtok(NULL, ",");
     fwrite(registro, sizeof(char), 20, arqSaida);
 
     // Escreve registros do csv linha a linha
     int32_t nReg = 0, nRemovidos = 0;
     int64_t offset = 0;
-    while (registro) {
-        free(registro);
-        registro = leLinha(arqEntrada);
-        if (!registro) break;
+    while (tempRegistro) {
+        free(tempRegistro);
+        tempRegistro = leLinha(arqEntrada);
+        if (!tempRegistro) break;
 
-        int r = adicionaVeiculoARQ(arqSaida, registro, &offset);
+        int r = adicionaVeiculoARQ(arqSaida, tempRegistro, &offset);
         if (r == -1) {
+            printf("::: 114\n");
+            free(tempRegistro);
             fclose(arqEntrada); fclose(arqSaida);
             return 1;
         }

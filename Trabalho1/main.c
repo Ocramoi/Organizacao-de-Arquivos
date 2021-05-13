@@ -1,21 +1,11 @@
 /*
-<<<<<<< HEAD
-** NOTE: Funções implementadas
-** TODO: Implementar escreveTabelaVeiculos em Veiculos.c 
-** TODO: Implementar adicionaVeiculo em Veiculos.c
-** TODO: Implementar escrita das linhas no binário
-=======
 ** NOTE: Funções implementadas: [1]
 ** TODO: Implementar estrutura das linhas individuais em Linhas.h
->>>>>>> 0c2023716071dfb0db7d43271c4bbab375709680
-** REVIEW: Conferir criaTabelaVeiculos em Veiculos.c (estrutura passível de mudança pós implementação das outras funções)
-** REVIEW: Conferir sintaxe e estrutura dos TADs
-** REVIEW: Testar funções de tabela de veículo
-** 
-** Comentarios Clayton: Adicionei a função binarioNaTela, estou implementando a [2] Linhas.c, começarei a implementar a escrita no binário
-** 
+** TODO: Concertar funções de veículos (saída da função dada ligeiramente diferente [algum campo deve estar sendo escrito fora da especificação])
 **
-** Comentarios Marco: Função [1] implementada mas não testada, cuido disso depois da aula ijafsdngijuadbnfg
+** Comentarios Clayton: Adicionei a função binarioNaTela, estou implementando a [2] Linhas.c, começarei a implementar a escrita no binário
+**
+** Comentarios Marco: Função [1] implementada AGORA DIRETAMENTE DO ARQUIVO !! ligeiramente incorreto no hashing de conferência (vou arrumar amanhã)
 **
  */
 
@@ -48,7 +38,7 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                  arqSaida[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
-            if (criaTabelaVeiculosARQ(arqEntrada, arqSaida))
+            if (!criaTabelaVeiculosARQ(arqEntrada, arqSaida))
                 FF_binarioNaTela(arqSaida);
             else
                 printf("Falha no processamento do arquivo.\n");
