@@ -1,9 +1,10 @@
 /*
 ** NOTE: Funções implementadas: [1]
-** TODO: Implementar estrutura das linhas individuais em Linhas.h
-** TODO: Concertar funções de veículos (saída da função dada ligeiramente diferente [algum campo deve estar sendo escrito fora da especificação])
-**
-** Comentarios Clayton: Adicionei a função binarioNaTela, estou implementando a [2] Linhas.c, começarei a implementar a escrita no binário
+** TODO: Concertar funções de veículos e linhas (saída da função dada ligeiramente diferente [algum campo deve estar sendo escrito fora da especificação])
+** TODO: Tabela Linhas adicionar codigo dos 2 números restantes dos registros removidos, *12 inserir 12. 
+** 
+**  
+** Comentarios Clayton: Hash diferente tbm nas linhas. Comparador hash HexCmp; 
 **
 ** Comentarios Marco: Função [1] implementada AGORA DIRETAMENTE DO ARQUIVO !! ligeiramente incorreto no hashing de conferência (vou arrumar amanhã)
 **
