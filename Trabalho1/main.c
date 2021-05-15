@@ -48,8 +48,8 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                  arqSaida[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqSaida);
-            if (criaTabelaLinhas(arqEntrada, arqSaida))
-                FF_binarioNaTela(arqSaida); // Função binarioNaTela desenvolvida pela Professora
+            if (!criaTabelaLinhas(arqEntrada, arqSaida))
+                FF_binarioNaTela(arqSaida);
             else
                 printf("Falha no processamento do arquivo.\n");
             break;

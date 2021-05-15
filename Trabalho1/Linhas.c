@@ -2,112 +2,132 @@
 #include "LeLinha.h"
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
-/* Escreve [arquivo] binário a partir da [tabela] dada */
-int escreveTabelaLinhas(FILE *arquivo, LINHAS_t *tabela) {
-    return 0;
-}
+/* Adiciona linha a partir de [tempRegistro] ao arquivo [tabela] já criado */
+int adicionaLinha(FILE *tabela, char *registro, int64_t *offset) {
+    // Erro de ponteiros
+    if (!tabela || !registro || !offset)
+        return -1;
 
-/* Adiciona linha a partir de [registro] à [tabela] já criada */
-LINHA_t *adicionaLinha(LINHAS_t *tabela, char *registro) {
-    // Estrutura para novo linha a ser adicionado
-    LINHA_t *novo = malloc(sizeof(LINHA_t));
-    // Inicia tokenização do csv
-    char *token;
-   
-    // Cria nova estrutura para a linha a ser lida e popula dados
-    novo->removido = 1;
-    token = strsep(&registro, ",");
-    strcpy(novo->codLinha, token);
-    printf("Codigo: %s\n",novo->codLinha);
-    token = strsep(&registro, ",");
-    strcpy(novo->aceitaCartao, token);
-    printf("Aceita Cartao: %s\n",novo->aceitaCartao);
-    token = strsep(&registro, ",");
-    strcpy(novo->nomeLinha, token); 
-    printf("Nome Linha: %s\n",novo->nomeLinha);
-    token = strsep(&registro, ",");
-    strcpy(novo->corLinha, token);
-    printf("Nome cor: %s\n",novo->corLinha);
+    char *tempLeitura = strtok(registro, ","); // Inicializa tokenização da string de registro
+    
+    int32_t codigo;
+    // Contabiliza e escreve se registro foi removido e escreve o código nas duas situações
+    int controleRemovido;
+    if (tempLeitura[0] == '*'){
+        controleRemovido = 1;
+        fwrite("1", sizeof(char), 1, tabela);
+        codigo = 2;
+    }
+    else{
+        controleRemovido = 0;
+        fwrite("0", sizeof(char), 1, tabela);
+        codigo = atoi(tempLeitura);
+    }
+        fwrite(&codigo, sizeof(int32_t), 1, tabela);
+        tempLeitura = strtok(NULL, ",");
 
-    //Calcula o tamanho dos registros != de calcular o tamanho da struct
-    novo->tamanhoNome = strlen(novo->nomeLinha);
-    novo->tamanhoCor = strlen(novo->corLinha);
-    novo->tamanhoRegistro = strlen(novo->codLinha)+strlen(novo->aceitaCartao)+novo->tamanhoNome+novo->tamanhoCor ;
-    printf("Tamanho total: %d Tamanho Nome: %d  Tamanho Cor: %d \n", novo->tamanhoRegistro, novo->tamanhoNome, novo->tamanhoCor);
-    printf("\n");
-   
+    
+    // Escreve strings tratando NULO quando necessário e registrando informações numéricas
+    
+    //if (!strcmp(tempLeitura, "NULO"))
+    //    return -1; // ESSE CASO NÃO PODE ACONTECER, TRATAR COMO ??
+    //else
+
+
+    if (!strcmp(tempLeitura, "NULO"))
+        fwrite("\0", sizeof(char), 1, tabela);
+    else
+        fwrite(tempLeitura, sizeof(char), 1, tabela);
+    tempLeitura = strtok(NULL, ",");
+
+    int32_t controleNomeLinha;
+    if (!strcmp(tempLeitura, "NULO"))
+        controleNomeLinha = 0;
+    else
+        controleNomeLinha = strlen(tempLeitura);
+    fwrite(&controleNomeLinha, sizeof(int32_t), 1, tabela);
+    fwrite(tempLeitura, sizeof(char), controleNomeLinha, tabela);
+    tempLeitura = strtok(NULL, ",");
+
+    int32_t controleCorLinha;
+    if (!strcmp(tempLeitura, "NULO"))
+        controleCorLinha = 0;
+    else
+        controleCorLinha = strlen(tempLeitura);
+    fwrite(&controleCorLinha, sizeof(int32_t), 1, tabela);
+    fwrite(tempLeitura, sizeof(char), controleCorLinha, tabela);
+    tempLeitura = strtok(NULL, ",");
+
+    // Contabiliza tamanho do registro
+    *offset += 18 + controleNomeLinha + controleCorLinha;
 
     // Retorna registro adicionado
-    return novo;
+    return controleRemovido;
 }
 
-/* "CREATE TABLE" de linhas a partir do csv de nome [entrada], salvando como o arquivo binário [saida] */
+/* "CREATE TABLE" de linhas a partir do csv de nome [entrada], salvando como o arquivo binário [saida] (sem memória auxiliar) */
 int criaTabelaLinhas(char *entrada, char *saida) {
-    // Abre arquivo de entrada a partir do nome
-    FILE *arqEntrada = fopen(entrada, "rb");
+    // Abre arquivos a partir do nome
+    FILE *arqEntrada = fopen(entrada, "r"),
+         *arqSaida = fopen(saida, "wb+");
     if (!arqEntrada) { // Confere falha na abertura dos arquivos
         // Fecha arquivos e retorna erro;
-        fclose(arqEntrada);
+        fclose(arqEntrada); fclose(arqSaida);
+        printf("::: 81\n");
         return 1;
     }
 
     // Lê cabeçalho do arquivo de entrada
-    char *registro = leLinha(arqEntrada);
+    char *tempRegistro = leLinha(arqEntrada),
     // Inicia tokenização do csv
-    char *variavel;    
+    *registro = strtok(tempRegistro, ",");
 
-    // Cria nova estrutura para a tabela a ser lida e popula dados
-    LINHAS_t *tabela = malloc(sizeof(LINHAS_t));
-    tabela->status = 0;
-    tabela->byteProxReg = 0;
-    tabela->nroRegistros = 0;
-    tabela->nroRegRemovidos = 0;
-    printf("Registro de Cabecalho: %d %ld %d %d ", tabela->status, tabela->byteProxReg, tabela->nroRegistros, tabela->nroRegRemovidos);
-    variavel = strsep(&registro, ",");
-    strcpy(tabela->descreveCodigo, variavel);
-    printf("%s ",tabela->descreveCodigo);
-    variavel = strsep(&registro, ",");
-    strcpy(tabela->descreveCartao, variavel);
-    printf("%s ",tabela->descreveCartao);
-    variavel = strsep(&registro, ",");
-    strcpy(tabela->descreveNome, variavel);
-    printf("%s ",tabela->descreveNome);
-    variavel = strsep(&registro, ",");
-    strcpy(tabela->descreveLinha, variavel);
-    printf("%s\n\n",tabela->descreveLinha);
-    tabela->linhas = NULL;
+    // Inicializa cabeçalho
+    int64_t byteProxReg = 83;
+    int32_t nroRegistros = 0;
+    int32_t nroRegRemovidos = 0;
+    fwrite("0", sizeof(char), 1, arqSaida);
+    fwrite(&byteProxReg, sizeof(int64_t), 1, arqSaida);
+    fwrite(&nroRegistros, sizeof(int32_t), 1, arqSaida);
+    fwrite(&nroRegRemovidos, sizeof(int32_t), 1, arqSaida);
+    fwrite(registro, sizeof(char), 15, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 13, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 13, arqSaida); registro = strtok(NULL, ",");
+    fwrite(registro, sizeof(char), 24, arqSaida); 
 
-    
-    
-    //Libera registro e posiciona o ponteiro no inicio do arquivo
-    free(registro);
-    fseek(arqEntrada, 0, SEEK_SET);
-    registro = leLinha(arqEntrada);
-    
-    // Lê registros do csv linha a linha
-    while (registro) {
-        free(registro);
-        registro = leLinha(arqEntrada);
-        if (!registro) break;
-        if (adicionaLinha(tabela, registro)){}
-            //printf("Erro na inserção de registro!\n"); //flag
+    // Escreve registros do csv linha a linha
+    int32_t nReg = 0, nRemovidos = 0;
+    int64_t offset = 0;
+    while (tempRegistro) {
+        free(tempRegistro);
+        tempRegistro = leLinha(arqEntrada);
+        if (!tempRegistro) break;
+
+        int r = adicionaLinha(arqSaida, tempRegistro, &offset);
+        if (r == -1) {
+            printf("::: 114\n");
+            free(tempRegistro);
+            fclose(arqEntrada); fclose(arqSaida);
+            return 1;
+        }
+        nRemovidos += r;
+        nReg++;
     }
-
-
     // Fecha arquivo de entrada
     fclose(arqEntrada);
 
-    tabela->status = 1; // TODO: Conferir se o status da tabela tá sendo indicado de acordo com especifiações ujiadfsguiabguib
+    // Atualiza cabeçalho
+    fseek(arqSaida, 0, SEEK_SET);
+    fwrite("1", sizeof(char), 1, arqSaida);
+    fwrite(&offset, sizeof(int64_t), 1, arqSaida);
+    fwrite(&nReg, sizeof(int32_t), 1, arqSaida);
+    fwrite(&nRemovidos, sizeof(int32_t), 1, arqSaida);
 
-    // Abre arquivo de saída
-    FILE *arqSaida = fopen(saida, "wb+");
-    // Escreve tabela
-    escreveTabelaLinhas(arqSaida, tabela);
-    // Fecha arquivo
+    // Fecha arquivo de saída após escrever
     fclose(arqSaida);
 
-    // Retorno de sucesso
     return 0;
 }
