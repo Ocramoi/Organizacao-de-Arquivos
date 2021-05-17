@@ -14,7 +14,6 @@ int adicionaLinha(FILE *tabela, char *registro, int64_t *offset) {
     char *tempLeitura = strtok(registro, ","); // Inicializa tokenização da string de registro, captura o código
 
     // Contabiliza e escreve se registro foi removido e escreve o código nas duas situações
-    int32_t codigo;
     int controleRemovido;
     if (tempLeitura[0] == '*'){
         memmove(tempLeitura, tempLeitura+1, strlen(tempLeitura));
@@ -27,7 +26,7 @@ int adicionaLinha(FILE *tabela, char *registro, int64_t *offset) {
     }       
         
     //Captura e armazena os dados do arquivo CSV, fez-se o armazenamento para contabilizar o tamanho do arquivo
-    codigo = atoi(tempLeitura);
+    int32_t codigo = atoi(tempLeitura);
     tempLeitura = strtok(NULL, ",");
     char *AceitaCartao = strdup(tempLeitura);
     tempLeitura = strtok(NULL, ",");
