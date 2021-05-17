@@ -1,12 +1,11 @@
 /*
 ** NOTE: Funções implementadas: [1] e [2]
-** TODO: Iniciar a implementação da função 3 sobre os dados de veiculos.
+** TODO: Conferir documentação das funções [1] e [2].
+** TODO: Terminar implementação da função [3].
 ** TODO: Iniciar a implementação da função 4 sobre os dados de linha.
 **  
 ** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
 ** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
-**
-** Comentarios Marco: Função [1] implementada AGORA DIRETAMENTE DO ARQUIVO !! ligeiramente incorreto no hashing de conferência (vou arrumar amanhã)
 **
  */
 
@@ -20,9 +19,10 @@
  */
 
 #include "LeLinha.h"
-#include "VeiculosARQ.h"
+#include "Veiculos.h"
 #include "Linhas.h"
 #include "BinarioNaTela.h"
+#include "SelectVeiculos.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -55,8 +55,21 @@ int main(int argc, char **argv) {
                 printf("Falha no processamento do arquivo.\n");
             break;
         }
-        case 3:
+        case 3: {
+            char arqEntrada[100];
+            sscanf(entrada, "%s", arqEntrada);
+            switch (selectAllVeiculos(arqEntrada)) {
+                case -1:
+                    printf("Registro inexistente\n");
+                    break;
+                case 1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                default:
+                    break;
+            }
             break;
+        }
         case 4:
             break;
         case 5:
