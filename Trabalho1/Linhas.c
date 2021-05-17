@@ -11,56 +11,65 @@ int adicionaLinha(FILE *tabela, char *registro, int64_t *offset) {
     if (!tabela || !registro || !offset)
         return -1;
 
-    char *tempLeitura = strtok(registro, ","); // Inicializa tokenização da string de registro
-    
-    int32_t codigo;
+    char *tempLeitura = strtok(registro, ","); // Inicializa tokenização da string de registro, captura o código
+
     // Contabiliza e escreve se registro foi removido e escreve o código nas duas situações
+    int32_t codigo;
     int controleRemovido;
     if (tempLeitura[0] == '*'){
+        memmove(tempLeitura, tempLeitura+1, strlen(tempLeitura));
         controleRemovido = 1;
-        fwrite("1", sizeof(char), 1, tabela);
-        codigo = 2;
+        fwrite("0", sizeof(char), 1, tabela); //Incrementa o removido com 1, e define 0 no arquivo.
     }
     else{
         controleRemovido = 0;
-        fwrite("0", sizeof(char), 1, tabela);
-        codigo = atoi(tempLeitura);
-    }
-        fwrite(&codigo, sizeof(int32_t), 1, tabela);
-        tempLeitura = strtok(NULL, ",");
-
-    
-    // Escreve strings tratando NULO quando necessário e registrando informações numéricas
-    
-    //if (!strcmp(tempLeitura, "NULO"))
-    //    return -1; // ESSE CASO NÃO PODE ACONTECER, TRATAR COMO ??
-    //else
-
-
-    if (!strcmp(tempLeitura, "NULO"))
-        fwrite("\0", sizeof(char), 1, tabela);
-    else
-        fwrite(tempLeitura, sizeof(char), 1, tabela);
+        fwrite("1", sizeof(char), 1, tabela); //Adiciona 0 aos removidos, e define 1 no arquivo.
+    }       
+        
+    //Captura e armazena os dados do arquivo CSV, fez-se o armazenamento para contabilizar o tamanho do arquivo
+    codigo = atoi(tempLeitura);
     tempLeitura = strtok(NULL, ",");
+    char *AceitaCartao = strdup(tempLeitura);
+    tempLeitura = strtok(NULL, ",");
+    char *NomeDaLinha = strdup(tempLeitura);
+    tempLeitura = strtok(NULL, ",");
+    char *CorDaLinha = strdup(tempLeitura);
 
+    //Define-se o tamanho do campo NomeDaLinha
     int32_t controleNomeLinha;
-    if (!strcmp(tempLeitura, "NULO"))
+    if (!strcmp(NomeDaLinha, "NULO"))
         controleNomeLinha = 0;
     else
-        controleNomeLinha = strlen(tempLeitura);
-    fwrite(&controleNomeLinha, sizeof(int32_t), 1, tabela);
-    fwrite(tempLeitura, sizeof(char), controleNomeLinha, tabela);
-    tempLeitura = strtok(NULL, ",");
+        controleNomeLinha = strlen(NomeDaLinha);
 
+    //Define-se o tamanho do campo CorDaLinha
     int32_t controleCorLinha;
-    if (!strcmp(tempLeitura, "NULO"))
+    if (!strcmp(CorDaLinha, "NULO"))
         controleCorLinha = 0;
     else
-        controleCorLinha = strlen(tempLeitura);
-    fwrite(&controleCorLinha, sizeof(int32_t), 1, tabela);
-    fwrite(tempLeitura, sizeof(char), controleCorLinha, tabela);
-    tempLeitura = strtok(NULL, ",");
+        controleCorLinha = strlen(CorDaLinha);
+    
+    //Definição e escrita do tamanho de registro 3*int+1*char = 13 + variável
+    int32_t tamanhoRegistro;
+    tamanhoRegistro = 13 + controleNomeLinha + controleCorLinha;
+    fwrite(&tamanhoRegistro, sizeof(int32_t), 1, tabela);
+    
+    //Escrita do campo codigo.
+    fwrite(&codigo, sizeof(int32_t), 1, tabela);
 
+    //Escrita do campo aceitaCartao com sua possibilidade de ser 0.
+    if (!strcmp(AceitaCartao, "NULO"))
+        fwrite("\0", sizeof(char), 1, tabela);
+    else
+        fwrite(AceitaCartao, sizeof(char), 1, tabela); 
+    
+    //Escrita dos demais campos.
+    fwrite(&controleNomeLinha, sizeof(int32_t), 1, tabela);
+    fwrite(NomeDaLinha, sizeof(char), controleNomeLinha, tabela);
+    fwrite(&controleCorLinha, sizeof(int32_t), 1, tabela);
+    fwrite(CorDaLinha, sizeof(char), controleCorLinha, tabela);
+    tempLeitura = strtok(NULL, ",");
+    
     // Contabiliza tamanho do registro
     *offset += 18 + controleNomeLinha + controleCorLinha;
 
@@ -74,9 +83,6 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     FILE *arqEntrada = fopen(entrada, "r"),
          *arqSaida = fopen(saida, "wb+");
     if (!arqEntrada) { // Confere falha na abertura dos arquivos
-        // Fecha arquivos e retorna erro;
-        fclose(arqEntrada); fclose(arqSaida);
-        printf("::: 81\n");
         return 1;
     }
 
@@ -86,7 +92,7 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     *registro = strtok(tempRegistro, ",");
 
     // Inicializa cabeçalho
-    int64_t byteProxReg = 83;
+    int64_t byteProxReg = 82;
     int32_t nroRegistros = 0;
     int32_t nroRegRemovidos = 0;
     fwrite("0", sizeof(char), 1, arqSaida);
@@ -100,7 +106,7 @@ int criaTabelaLinhas(char *entrada, char *saida) {
 
     // Escreve registros do csv linha a linha
     int32_t nReg = 0, nRemovidos = 0;
-    int64_t offset = 0;
+    int64_t offset = 82;
     while (tempRegistro) {
         free(tempRegistro);
         tempRegistro = leLinha(arqEntrada);
@@ -108,7 +114,7 @@ int criaTabelaLinhas(char *entrada, char *saida) {
 
         int r = adicionaLinha(arqSaida, tempRegistro, &offset);
         if (r == -1) {
-            printf("::: 114\n");
+            printf("Falha no processamento do arquivo.");
             free(tempRegistro);
             fclose(arqEntrada); fclose(arqSaida);
             return 1;
@@ -123,11 +129,11 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     fseek(arqSaida, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, arqSaida);
     fwrite(&offset, sizeof(int64_t), 1, arqSaida);
+    nReg = nReg - nRemovidos;
     fwrite(&nReg, sizeof(int32_t), 1, arqSaida);
     fwrite(&nRemovidos, sizeof(int32_t), 1, arqSaida);
 
     // Fecha arquivo de saída após escrever
     fclose(arqSaida);
-
     return 0;
 }

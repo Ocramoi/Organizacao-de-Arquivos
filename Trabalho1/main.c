@@ -1,10 +1,10 @@
 /*
 ** NOTE: Funções implementadas: [1]
-** TODO: Concertar funções de veículos e linhas (saída da função dada ligeiramente diferente [algum campo deve estar sendo escrito fora da especificação])
-** TODO: Tabela Linhas adicionar codigo dos 2 números restantes dos registros removidos, *12 inserir 12. 
+** TODO: Concertar funções de veículos (saída da função dada ligeiramente diferente [algum campo deve estar sendo escrito fora da especificação])
+** TODO: Iniciar a função 4,6 e 8 sobre os dados de linha.
 ** 
 **  
-** Comentarios Clayton: Hash diferente tbm nas linhas. Comparador hash HexCmp; 
+** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
 **
 ** Comentarios Marco: Função [1] implementada AGORA DIRETAMENTE DO ARQUIVO !! ligeiramente incorreto no hashing de conferência (vou arrumar amanhã)
 **
