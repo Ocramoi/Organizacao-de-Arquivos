@@ -1,10 +1,10 @@
 /*
-** NOTE: Funções implementadas: [1]
-** TODO: Concertar funções de veículos (saída da função dada ligeiramente diferente [algum campo deve estar sendo escrito fora da especificação])
-** TODO: Iniciar a função 4,6 e 8 sobre os dados de linha.
-** 
+** NOTE: Funções implementadas: [1] e [2]
+** TODO: Iniciar a implementação da função 3 sobre os dados de veiculos.
+** TODO: Iniciar a implementação da função 4 sobre os dados de linha.
 **  
 ** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
+** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
 **
 ** Comentarios Marco: Função [1] implementada AGORA DIRETAMENTE DO ARQUIVO !! ligeiramente incorreto no hashing de conferência (vou arrumar amanhã)
 **
