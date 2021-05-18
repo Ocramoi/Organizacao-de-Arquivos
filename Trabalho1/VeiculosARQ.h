@@ -10,4 +10,8 @@ int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset);
 /* "CREATE TABLE" de veículos a partir do csv de nome [entrada], salvando como o arquivo binário [saida] (sem memória auxiliar) */
 int criaTabelaVeiculosARQ(char *entrada, char *saida);
 
+/* "CREATE TABLE" de veículos a partir do csv de nome [entrada], salvando como o arquivo binário [saida] (sem memória auxiliar) */
+int buscaVeiculos(char *entrada, char *nomeDoCampo, char *valor);
+
+
 #endif // __VEICULOSARQ_H_
