@@ -59,8 +59,18 @@ int main(int argc, char **argv) {
             break;
         case 4:
             break;
-        case 5:
+        case 5: {
+            char arqEntrada[100],
+                 nomeDoCampo[100],
+                 valor[100];
+            sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, nomeDoCampo, valor);
+            if (!buscaVeiculos(arqEntrada, nomeDoCampo, valor)){
+                
+            }
+            else
+                printf("Falha no processamento do arquivo.\n");
             break;
+        }
         case 6:
             break;
         case 7:
