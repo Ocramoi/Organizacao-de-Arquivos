@@ -26,7 +26,6 @@
 #include "Veiculos.h"
 #include "Linhas.h"
 #include "BinarioNaTela.h"
-#include "SelectVeiculos.h"
 
 #include <stdio.h>
 #include <stdlib.h>
