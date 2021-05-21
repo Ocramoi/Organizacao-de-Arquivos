@@ -1,15 +1,12 @@
 /*
-** NOTE: Funções implementadas: [1], [2] e [3]
-** TODO: Iniciar a implementação da função 3 e 4 sobre os dados.
+** NOTE: Funções implementadas: [1], [2], [3], [4]
 ** TODO: Iniciar a implementação da função 5 e 6 sobre os dados.
-** TODO: Conferir documentação das funções [1] e [2].
-** TODO: Iniciar a implementação da função 4 sobre os dados de linha.
 **
 ** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
 ** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
 ** Função [5] esboçada inicialmente, funciona com prefixo XXXXX, os outros casos não estão implementados...
 **
-** Comentários Marco: função 3 implementada e funcionando, mas ainda não testada no run.codes
+** Comentários Marco: função 3 e 4 implementadas e funcionando, mas ainda não testadas no run.codes
 **
  */
 
@@ -73,8 +70,21 @@ int main(int argc, char **argv) {
             }
             break;
         }
-        case 4:
+        case 4: {
+            char arqEntrada[100];
+            sscanf(entrada, "%d %s", &opcao, arqEntrada);
+            switch (selectAllLinhas(arqEntrada)) {
+                case -1:
+                    printf("Registro inexistente\n");
+                    break;
+                case 1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                default:
+                    break;
+            }
             break;
+        }
         case 5: {
             char arqEntrada[100],
                  nomeDoCampo[100],

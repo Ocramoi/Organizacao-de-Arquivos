@@ -136,3 +136,93 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     fclose(arqSaida);
     return 0;
 }
+
+/* "SELECT * from Linhas" -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de linhas */
+int selectAllLinhas(char *tabela) {
+    // Testa nome de arquivo e arquivo aberto
+    FILE *arq = fopen(tabela, "rb");
+    if (!tabela || !arq)
+        return 1;
+
+    // Lê e confere status do arquivo
+    char status; fread(&status, sizeof(char), 1, arq);
+    if (status != '1') {
+        fclose(arq);
+        return 1;
+    }
+    fseek(arq, sizeof(int64_t), SEEK_CUR);
+
+    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
+    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
+    if (nroRegs == 0) {
+        fclose(arq);
+        return -1;
+    }
+
+    // Lê strings de cabeçalho
+    char *descreveCodigo = calloc(16, sizeof(char)),
+        *descreveCartao = calloc(14, sizeof(char)),
+        *descreveNome = calloc(14, sizeof(char)),
+        *descreveLinha = calloc(25, sizeof(char));
+    fread(descreveCodigo, sizeof(char), 15, arq);
+    fread(descreveCartao, sizeof(char), 13, arq);
+    fread(descreveNome, sizeof(char), 13, arq);
+    fread(descreveLinha, sizeof(char), 24, arq);
+
+    // Lê registro a registro contabilizando removidos
+    int controleRemovidos = 0;
+    for (int i = 0; i < nroRegs; ++i) {
+        char removido; fread(&removido, sizeof(char), 1, arq);
+        int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
+        if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+            controleRemovidos++;
+            fseek(arq, offset, SEEK_CUR);
+            continue;
+        }
+
+        // Lê valores brutos do registro e os formata
+        int32_t codLinha; fread(&codLinha, sizeof(int32_t), 1, arq);
+        char aceitaCartao; fread(&aceitaCartao, sizeof(char), 1, arq);
+        int32_t tamNome; fread(&tamNome, sizeof(int32_t), 1, arq);
+        char curNome[tamNome + 1]; fread(curNome, sizeof(char), tamNome, arq); curNome[tamNome] = '\0';
+        int32_t tamCor; fread(&tamCor, sizeof(int32_t), 1, arq);
+        char curCor[tamCor + 1]; fread(curCor, sizeof(char), tamCor, arq); curCor[tamCor] = '\0';
+
+        // Exibe informações no formato indicado
+        printf("%s: %d\n", descreveCodigo, codLinha);
+
+        printf("%s: ", descreveNome);
+        if (tamNome)
+            printf("%s\n", curNome);
+        else
+            printf("campo com valor nulo\n");
+
+        printf("%s: ", descreveLinha);
+        if (tamCor)
+            printf("%s\n", curCor);
+        else
+            printf("campo com valor nulo\n");
+
+        printf("%s: ", descreveCartao);
+        switch (aceitaCartao) {
+            case 'S':
+                printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
+                break;
+            case 'N':
+                printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
+                break;
+            case 'F':
+                printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
+                break;
+        }
+
+        printf("\n");
+    }
+
+    // Libera memória alocada
+    free(descreveCodigo); free(descreveCartao); free(descreveNome); free(descreveLinha);
+    // Fecha arquivo da tabela
+    fclose(arq);
+
+    return 0;
+}
