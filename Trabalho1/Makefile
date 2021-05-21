@@ -16,7 +16,7 @@ debug:
 	gcc *.c -o $(ARQ_SAIDA) -g
 
 val:
-	valgrind ./$(ARQ_SAIDA)
+	valgrind --leak-check=full --show-leak-kinds=all ./$(ARQ_SAIDA)
 
 clear:
 	rm $(ARQ_SAIDA)

@@ -1,17 +1,15 @@
 /*
-** NOTE: Funções implementadas: [1] e [2]
-<<<<<<< HEAD
+** NOTE: Funções implementadas: [1], [2] e [3]
 ** TODO: Iniciar a implementação da função 3 e 4 sobre os dados.
 ** TODO: Iniciar a implementação da função 5 e 6 sobre os dados.
-=======
 ** TODO: Conferir documentação das funções [1] e [2].
-** TODO: Terminar implementação da função [3].
 ** TODO: Iniciar a implementação da função 4 sobre os dados de linha.
->>>>>>> 731049b026087e8485b9379177271340e0272e64
-**  
+**
 ** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
 ** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
 ** Função [5] esboçada inicialmente, funciona com prefixo XXXXX, os outros casos não estão implementados...
+**
+** Comentários Marco: função 3 implementada e funcionando, mas ainda não testada no run.codes
 **
  */
 
@@ -63,7 +61,7 @@ int main(int argc, char **argv) {
         }
         case 3: {
             char arqEntrada[100];
-            sscanf(entrada, "%s", arqEntrada);
+            sscanf(entrada, "%d %s", &opcao, arqEntrada);
             switch (selectAllVeiculos(arqEntrada)) {
                 case -1:
                     printf("Registro inexistente\n");
@@ -83,11 +81,11 @@ int main(int argc, char **argv) {
                  nomeDoCampo[100],
                  valor[100];
             sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, nomeDoCampo, valor);
-            if (!buscaVeiculos(arqEntrada, nomeDoCampo, valor)){
+            /* if (!buscaVeiculos(arqEntrada, nomeDoCampo, valor)){ */
                 
-            }
-            else
-                printf("Falha no processamento do arquivo.\n");
+            /* } */
+            /* else */
+            /*     printf("Falha no processamento do arquivo.\n"); */
             break;
         }
         case 6:
