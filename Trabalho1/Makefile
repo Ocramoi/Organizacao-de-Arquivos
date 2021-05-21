@@ -19,6 +19,9 @@ val:
 	valgrind --leak-check=full --show-leak-kinds=all ./$(ARQ_SAIDA)
 
 clear:
-	rm $(ARQ_SAIDA)
+	rm $(ARQ_SAIDA) Entrega.zip
+
+Entrega:
+	zip Entrega.zip *.c *.h Makefile
 
 # end
