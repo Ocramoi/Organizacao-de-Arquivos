@@ -197,7 +197,7 @@ int selectAllVeiculos(char *tabela) {
 
     // Lê registro a registro contabilizando removidos
     int32_t controleRemovidos = 0;
-    for (int i = 0; i < nroRegs; ++i) {
+    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
         char removido; fread(&removido, sizeof(char), 1, arq);
         int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
         if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
