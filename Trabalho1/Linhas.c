@@ -7,7 +7,7 @@
 
 /* Adiciona linha a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaLinha(FILE *tabela, char *registro, int64_t *offset) {
-    // Erro de ponteiros
+    // Trata erros de ponteiros
     if (!tabela || !registro || !offset)
         return -1;
 

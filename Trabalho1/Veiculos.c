@@ -7,7 +7,7 @@
 
 /* Adiciona veículo a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
-    // Erro de ponteiros
+    // Trata erro de ponteiros
     if (!tabela || !registro || !offset)
         return -1;
 
@@ -37,21 +37,20 @@ int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
     char *categoria = strdup(tempLeitura);
     tempLeitura = strtok(NULL, ",");
     
-    // Define-se o tamanho do campo Modelo
+    // Define-se os tamanho do campo Modelo e Categoria
     int32_t controleModelo;
     if (!strcmp(modelo, "NULO"))
         controleModelo = 0;
     else
         controleModelo = strlen(modelo);
     
-    // Define-se o tamanho do campo Categoria
     int32_t controleCat;
     if (!strcmp(categoria, "NULO"))
         controleCat = 0;
     else
         controleCat = strlen(categoria);
     
-    // Definição e escrita do tamanho de registro 4*int+15*char = 31 + variável
+    // Definição e escrita do tamanho de registro [4*int + 15*char] = 31 + variável
     int32_t tamanhoRegistro;
     tamanhoRegistro = 31 + controleModelo + controleCat;
     fwrite(&tamanhoRegistro, sizeof(int32_t), 1, tabela);
@@ -100,9 +99,8 @@ int criaTabelaVeiculosARQ(char *entrada, char *saida) {
     // Abre arquivos a partir do nome
     FILE *arqEntrada = fopen(entrada, "r"),
         *arqSaida = fopen(saida, "wb+");
-    if (!arqEntrada) { // Confere falha na abertura dos arquivos
+    if (!arqEntrada) // Confere falha na abertura dos arquivos
         return 1;
-    }
 
     // Lê cabeçalho do arquivo de entrada
     char *tempRegistro = leLinha(arqEntrada),
@@ -133,7 +131,6 @@ int criaTabelaVeiculosARQ(char *entrada, char *saida) {
 
         int r = adicionaVeiculoARQ(arqSaida, tempRegistro, &offset);
         if (r == -1) {
-            printf("::: 114\n");
             free(tempRegistro);
             fclose(arqEntrada); fclose(arqSaida);
             return 1;
