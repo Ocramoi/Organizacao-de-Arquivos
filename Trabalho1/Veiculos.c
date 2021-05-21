@@ -177,6 +177,9 @@ int selectAllVeiculos(char *tabela) {
         fclose(arq);
         return -1;
     }
+    /* printf("::: %d\n", nroRemvs); */
+    /* fclose(arq); */
+    /* return 0; */
 
     // Lê strings de cabeçalho
     char *prefixo = calloc(19, sizeof(char)),
