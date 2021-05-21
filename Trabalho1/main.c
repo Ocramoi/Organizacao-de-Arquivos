@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
             sscanf(entrada, "%d %s", &opcao, arqEntrada);
             switch (selectAllVeiculos(arqEntrada)) {
                 case -1:
-                    printf("Registro inexistente\n");
+                    printf("Registro inexistente.\n");
                     break;
                 case 1:
                     printf("Falha no processamento do arquivo.\n");
@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
             sscanf(entrada, "%d %s", &opcao, arqEntrada);
             switch (selectAllLinhas(arqEntrada)) {
                 case -1:
-                    printf("Registro inexistente\n");
+                    printf("Registro inexistente.\n");
                     break;
                 case 1:
                     printf("Falha no processamento do arquivo.\n");
