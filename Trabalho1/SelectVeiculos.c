@@ -7,10 +7,12 @@
 
 /* Seleciona e exibe todos os registros do arquivo binário [tabela] de veículos */
 int selectAllVeiculos(char *tabela) {
+    // Testa nome de arquivo e arquivo aberto
     FILE *arq = fopen(tabela, "rb");
     if (!tabela || !arq)
         return 1;
 
+    // Lê e confere status do arquivo
     char status; fread(&status, sizeof(char), 1, arq);
     if (status != '1') {
         fclose(arq);
@@ -25,6 +27,7 @@ int selectAllVeiculos(char *tabela) {
         return -1;
     }
 
+    // Lê strings de cabeçalho
     char *prefixo = calloc(19, sizeof(char)),
         *data = calloc(36, sizeof(char)),
         *lugares = calloc(43, sizeof(char)),
@@ -38,15 +41,17 @@ int selectAllVeiculos(char *tabela) {
     fread(modelo, sizeof(char), 17, arq);
     fread(categoria, sizeof(char), 20, arq);
 
+    // Lê registro a registro contabilizando removidos
     int controleRemovidos = 0;
     for (int i = 0; i < nroRegs; ++i) {
         char removido; fread(&removido, sizeof(char), 1, arq);
         int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
-        if (removido == '0') {
+        if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
             controleRemovidos++;
             fseek(arq, offset, SEEK_CUR);
             continue;
         }
+        // Lê valores brutos do registro e os formata
         char curPrefixo[6]; fread(curPrefixo, sizeof(char), 5, arq); curPrefixo[5] = '\0';
         char curData[11]; fread(curData, sizeof(char), 10, arq); curData[10] = '\0';
         int qntLugares; fread(&qntLugares, sizeof(int32_t), 1, arq);
@@ -56,6 +61,7 @@ int selectAllVeiculos(char *tabela) {
         int tamCateg; fread(&tamCateg, sizeof(int32_t), 1, arq);
         char curCateg[tamCateg + 1]; fread(curCateg, sizeof(char), tamCateg, arq); curCateg[tamCateg] = '\0';
 
+        // Exibe informações no formato indicado
         printf("%s: %s\n", prefixo, curPrefixo);
 
         printf("%s: ", modelo);
@@ -86,7 +92,10 @@ int selectAllVeiculos(char *tabela) {
             printf("campo com valor nulo\n\n");
     }
 
+    // Liber memória alocada
     free(prefixo); free(data); free(lugares); free(linha); free(modelo); free(categoria);
+    // Fecha arquivo da tabela
     fclose(arq);
+
     return 0;
 }
