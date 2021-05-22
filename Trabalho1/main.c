@@ -6,7 +6,7 @@
 ** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
 ** Função [5] esboçada inicialmente, funciona com prefixo XXXXX, os outros casos não estão implementados...
 **
-** Comentários Marco: funções 3, 4, 5 e 6 implementadas e funcionando (inclusive no run.codes), mas ainda não comentadas corretamente
+** Comentários Marco: funções 3, 4, 5 e 6 implementadas e funcionando (inclusive no run.codes), só falta a 7/8 vamo que vamo dale
 **
  */
 
