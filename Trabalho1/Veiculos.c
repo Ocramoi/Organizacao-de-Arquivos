@@ -156,11 +156,66 @@ int criaTabelaVeiculosARQ(char *entrada, char *saida) {
     return 0;
 }
 
+int destroiVeiculo (VEICULO_t *veiculo) {
+    if (!veiculo)
+        return 1;
+
+    free(veiculo->categoria); free(veiculo->data); free(veiculo->modelo);
+    free(veiculo);
+    return 0;
+}
+
+VEICULO_t *leVeiculo(FILE *arq) {
+    if (!arq)
+        return NULL;
+
+    VEICULO_t *veiculo = malloc(sizeof(VEICULO_t));
+
+    char removido; fread(&removido, sizeof(char), 1, arq);
+    int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
+    if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+        fseek(arq, offset, SEEK_CUR);
+        free(veiculo);
+        return NULL;
+    }
+
+    // Lê valores brutos do registro e os formata
+    fread(veiculo->prefixo, sizeof(char), 5, arq); veiculo->prefixo[5] = '\0';
+    char curData[11]; fread(curData, sizeof(char), 10, arq); curData[10] = '\0';
+    veiculo->data = trataData(curData);
+    fread(&(veiculo->quantidadeLugares), sizeof(int32_t), 1, arq);
+    fread(&(veiculo->codLinha), sizeof(int32_t), 1, arq);
+
+    int tamModelo; fread(&tamModelo, sizeof(int32_t), 1, arq);
+    if (tamModelo) {
+        veiculo->modelo = calloc(tamModelo + 1, sizeof(char));
+        fread(veiculo->modelo, sizeof(char), tamModelo, arq);
+    } else
+        veiculo->modelo = NULL;
+
+    int tamCateg; fread(&tamCateg, sizeof(int32_t), 1, arq);
+    if (tamCateg){
+        veiculo->categoria = calloc(tamCateg + 1, sizeof(char));
+        fread(veiculo->categoria, sizeof(char), tamCateg, arq);
+    } else
+        veiculo->categoria = NULL;
+
+    return veiculo;
+}
+
 /* Seleciona e exibe todos os registros do arquivo binário [tabela] de veículos */
 int selectAllVeiculos(char *tabela) {
+    return selectVeiculos(tabela, NULL, NULL);
+}
+
+/* "SELECT * from Veiculos WHERE ..." -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de veículos com [campo] de [valor] */
+int selectVeiculos(char *tabela, char *campo, char *valor) {
     // Testa nome de arquivo e arquivo aberto
     FILE *arq = fopen(tabela, "rb");
     if (!tabela || !arq)
+        return 1;
+
+    if (campo && !valor)
         return 1;
 
     // Lê e confere status do arquivo
@@ -177,9 +232,6 @@ int selectAllVeiculos(char *tabela) {
         fclose(arq);
         return -1;
     }
-    /* printf("::: %d\n", nroRemvs); */
-    /* fclose(arq); */
-    /* return 0; */
 
     // Lê strings de cabeçalho
     char *prefixo = calloc(19, sizeof(char)),
@@ -195,58 +247,74 @@ int selectAllVeiculos(char *tabela) {
     fread(modelo, sizeof(char), 17, arq);
     fread(categoria, sizeof(char), 20, arq);
 
+    char *strTratado = strtok(valor, "\"");
+    int numTratado;
+    if (strTratado)
+        numTratado = atoi(strTratado);
+
     // Lê registro a registro contabilizando removidos
     int32_t controleRemovidos = 0;
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
-        char removido; fread(&removido, sizeof(char), 1, arq);
-        int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
-        if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+        VEICULO_t *atual = leVeiculo(arq);
+
+        if (arq && !atual) {
             controleRemovidos++;
-            fseek(arq, offset, SEEK_CUR);
             continue;
         }
 
-        // Lê valores brutos do registro e os formata
-        char curPrefixo[6]; fread(curPrefixo, sizeof(char), 5, arq); curPrefixo[5] = '\0';
-        char curData[11]; fread(curData, sizeof(char), 10, arq); curData[10] = '\0';
-        int qntLugares; fread(&qntLugares, sizeof(int32_t), 1, arq);
-        int codLinha; fread(&codLinha, sizeof(int32_t), 1, arq);
-        int tamModelo; fread(&tamModelo, sizeof(int32_t), 1, arq);
-        char curModelo[tamModelo + 1]; fread(curModelo, sizeof(char), tamModelo, arq); curModelo[tamModelo] = '\0';
-        int tamCateg; fread(&tamCateg, sizeof(int32_t), 1, arq);
-        char curCateg[tamCateg + 1]; fread(curCateg, sizeof(char), tamCateg, arq); curCateg[tamCateg] = '\0';
+        if (campo) {
+            if (!strcmp(campo, "prefixo") && strcmp(atual->prefixo, strTratado)) {
+                destroiVeiculo(atual);
+                continue;
+            }
+            if (!strcmp(campo, "data") && strcmp(atual->data, strTratado)) {
+                destroiVeiculo(atual);
+                continue;
+            }
+            if (!strcmp(campo, "quantidadeLugares") && numTratado != atual->quantidadeLugares) {
+                destroiVeiculo(atual);
+                continue;
+            }
+            if (!strcmp(campo, "modelo") && strcmp(atual->modelo, strTratado)) {
+                destroiVeiculo(atual);
+                continue;
+            }
+            if (!strcmp(campo, "categoria") && strcmp(atual->categoria, strTratado)) {
+                destroiVeiculo(atual);
+                continue;
+            }
+        }
 
         // Exibe informações no formato indicado
-        printf("%s: %s\n", prefixo, curPrefixo);
+        printf("%s: %s\n", prefixo, atual->prefixo);
 
         printf("%s: ", modelo);
-        if (tamModelo)
-            printf("%s\n", curModelo);
+        if (atual->modelo)
+            printf("%s\n", atual->modelo);
         else
             printf("campo com valor nulo\n");
 
         printf("%s: ", categoria);
-        if (tamCateg)
-            printf("%s\n", curCateg);
+        if (atual->categoria)
+            printf("%s\n", atual->categoria);
         else
             printf("campo com valor nulo\n");
 
         printf("%s: ", data);
-        char *dataTratada = trataData(curData);
-        if (dataTratada) {
-            printf("%s\n", dataTratada);
-        }
+        if (atual->data)
+            printf("%s\n", atual->data);
         else
             printf("campo com valor nulo\n");
-        free(dataTratada);
 
         printf("%s: ", lugares);
-        if (qntLugares != -1)
-            printf("%d\n", qntLugares);
+        if (atual->quantidadeLugares != -1)
+            printf("%d\n", atual->quantidadeLugares);
         else
             printf("campo com valor nulo\n");
 
         printf("\n");
+
+        destroiVeiculo(atual);
     }
 
     // Libera memória alocada
@@ -255,8 +323,8 @@ int selectAllVeiculos(char *tabela) {
     fclose(arq);
 
     // Confere se número de registros removidos correto
-    /* if (controleRemovidos != nroRemvs) */
-    /*     return 1; */
+    if (controleRemovidos != nroRemvs)
+        return 1;
 
     return 0;
 }

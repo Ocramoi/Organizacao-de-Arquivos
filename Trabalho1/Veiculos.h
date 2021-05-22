@@ -4,13 +4,24 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-/* Adiciona veículo a partir de [registro] ao arquivo [tabela] já criado */
-int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset);
+// Estrutura dado do registro de cada veículo (Registro de Dados)
+typedef struct {
+    char removido,
+        prefixo[6];
+    int32_t quantidadeLugares,
+        codLinha;
+    char *modelo,
+        *categoria,
+        *data;
+} VEICULO_t;
 
 /* "CREATE TABLE" de veículos a partir do csv de nome [entrada], salvando como o arquivo binário [saida] (sem memória auxiliar) */
 int criaTabelaVeiculosARQ(char *entrada, char *saida);
 
 /* "SELECT * from Veiculos" -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de veículos */
 int selectAllVeiculos(char *tabela);
+
+/* "SELECT * from Veiculos WHERE ..." -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de veículos com [campo] de [valor] */
+int selectVeiculos(char *tabela, char *campo, char *valor);
 
 #endif // __VEICULOSARQ_H_

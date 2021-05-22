@@ -1,12 +1,12 @@
 /*
-** NOTE: Funções implementadas: [1], [2], [3], [4]
+** NOTE: Funções implementadas: [1], [2], [3], [4], [5], [6]
 ** TODO: Iniciar a implementação da função 5 e 6 sobre os dados.
 **
 ** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
 ** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
 ** Função [5] esboçada inicialmente, funciona com prefixo XXXXX, os outros casos não estão implementados...
 **
-** Comentários Marco: função 3 e 4 implementadas e funcionando, mas ainda não testadas no run.codes
+** Comentários Marco: funções 3, 4, 5 e 6 implementadas e funcionando (inclusive no run.codes), mas ainda não comentadas corretamente
 **
  */
 
@@ -90,15 +90,35 @@ int main(int argc, char **argv) {
                  nomeDoCampo[100],
                  valor[100];
             sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, nomeDoCampo, valor);
-            /* if (!buscaVeiculos(arqEntrada, nomeDoCampo, valor)){ */
-                
-            /* } */
-            /* else */
-            /*     printf("Falha no processamento do arquivo.\n"); */
+            switch (selectVeiculos(arqEntrada, nomeDoCampo, valor)) {
+                case -1:
+                    printf("Registro inexistente.\n");
+                    break;
+                case 1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                default:
+                    break;
+            }
             break;
         }
-        case 6:
+        case 6: {
+            char arqEntrada[100],
+                 nomeDoCampo[100],
+                 valor[100];
+            sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, nomeDoCampo, valor);
+            switch (selectLinhas(arqEntrada, nomeDoCampo, valor)) {
+                case -1:
+                    printf("Registro inexistente.\n");
+                    break;
+                case 1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                default:
+                    break;
+            }
             break;
+        }
         case 7:
             break;
         case 8:

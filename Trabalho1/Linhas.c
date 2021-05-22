@@ -137,11 +137,62 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     return 0;
 }
 
+int destroiLinha (LINHA_t *linha) {
+    if (!linha)
+        return 1;
+
+    free(linha->nomeLinha); free(linha->corLinha);
+    free(linha);
+    return 0;
+}
+
+LINHA_t *leObjLinha(FILE *arq) {
+    if (!arq)
+        return NULL;
+
+    LINHA_t *linha = malloc(sizeof(LINHA_t));
+
+    char removido; fread(&removido, sizeof(char), 1, arq);
+    int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
+    if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+        fseek(arq, offset, SEEK_CUR);
+        free(linha);
+        return NULL;
+    }
+
+    // Lê valores brutos do registro e os formata
+    fread(&(linha->codLinha), sizeof(int32_t), 1, arq);
+    fread(&(linha->cartao), sizeof(char), 1, arq);
+
+    int tamNome; fread(&tamNome, sizeof(int32_t), 1, arq);
+    if (tamNome) {
+        linha->nomeLinha = calloc(tamNome + 1, sizeof(char));
+        fread(linha->nomeLinha, sizeof(char), tamNome, arq);
+    } else
+        linha->nomeLinha = NULL;
+
+    int tamCor; fread(&tamCor, sizeof(int32_t), 1, arq);
+    if (tamCor) {
+        linha->corLinha = calloc(tamCor + 1, sizeof(char));
+        fread(linha->corLinha, sizeof(char), tamCor, arq);
+    } else
+        linha->corLinha = NULL;
+
+    return linha;
+}
+
 /* "SELECT * from Linhas" -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de linhas */
 int selectAllLinhas(char *tabela) {
+    return selectLinhas(tabela, NULL, NULL);
+}
+
+int selectLinhas(char *tabela, char *campo, char *valor) {
     // Testa nome de arquivo e arquivo aberto
     FILE *arq = fopen(tabela, "rb");
     if (!tabela || !arq)
+        return 1;
+
+    if (campo && !valor)
         return 1;
 
     // Lê e confere status do arquivo
@@ -169,42 +220,59 @@ int selectAllLinhas(char *tabela) {
     fread(descreveNome, sizeof(char), 13, arq);
     fread(descreveLinha, sizeof(char), 24, arq);
 
+    char *strTratado = strtok(valor, "\"");
+    int numTratado;
+    if (strTratado)
+        numTratado = atoi(strTratado);
+
+    /* printf(":::::: %d\n", numTratado); */
+
     // Lê registro a registro contabilizando removidos
     int controleRemovidos = 0;
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
-        char removido; fread(&removido, sizeof(char), 1, arq);
-        int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
-        if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+        LINHA_t *atual = leObjLinha(arq);
+
+        if (arq && !atual) {
             controleRemovidos++;
-            fseek(arq, offset, SEEK_CUR);
             continue;
         }
 
-        // Lê valores brutos do registro e os formata
-        int32_t codLinha; fread(&codLinha, sizeof(int32_t), 1, arq);
-        char aceitaCartao; fread(&aceitaCartao, sizeof(char), 1, arq);
-        int32_t tamNome; fread(&tamNome, sizeof(int32_t), 1, arq);
-        char curNome[tamNome + 1]; fread(curNome, sizeof(char), tamNome, arq); curNome[tamNome] = '\0';
-        int32_t tamCor; fread(&tamCor, sizeof(int32_t), 1, arq);
-        char curCor[tamCor + 1]; fread(curCor, sizeof(char), tamCor, arq); curCor[tamCor] = '\0';
+        if (campo) {
+            if (!strcmp(campo, "codLinha") && (atual->codLinha != numTratado)) {
+                destroiLinha(atual);
+                continue;
+            }
+            if (!strcmp(campo, "aceitaCartao") && (atual->cartao != strTratado[0])) {
+                destroiLinha(atual);
+                continue;
+            }
+            if (!strcmp(campo, "nomeLinha") && strcmp(atual->nomeLinha, strTratado)) {
+                destroiLinha(atual);
+                continue;
+            }
+            if (!strcmp(campo, "corLinha") && strcmp(atual->corLinha, strTratado)) {
+                destroiLinha(atual);
+                continue;
+            }
+        }
 
         // Exibe informações no formato indicado
-        printf("%s: %d\n", descreveCodigo, codLinha);
+        printf("%s: %d\n", descreveCodigo, atual->codLinha);
 
         printf("%s: ", descreveNome);
-        if (tamNome)
-            printf("%s\n", curNome);
+        if (atual->nomeLinha)
+            printf("%s\n", atual->nomeLinha);
         else
             printf("campo com valor nulo\n");
 
         printf("%s: ", descreveLinha);
-        if (tamCor)
-            printf("%s\n", curCor);
+        if (atual->corLinha)
+            printf("%s\n", atual->corLinha);
         else
             printf("campo com valor nulo\n");
 
         printf("%s: ", descreveCartao);
-        switch (aceitaCartao) {
+        switch (atual->cartao) {
             case 'S':
                 printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
                 break;
@@ -217,6 +285,7 @@ int selectAllLinhas(char *tabela) {
         }
 
         printf("\n");
+        destroiLinha(atual);
     }
 
     // Libera memória alocada
