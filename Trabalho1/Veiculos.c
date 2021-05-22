@@ -156,21 +156,28 @@ int criaTabelaVeiculosARQ(char *entrada, char *saida) {
     return 0;
 }
 
+/* Libera memória de estrutura de veículo lida */
 int destroiVeiculo (VEICULO_t *veiculo) {
+    // Confere registro
     if (!veiculo)
         return 1;
 
+    // Libera memória associada
     free(veiculo->categoria); free(veiculo->data); free(veiculo->modelo);
     free(veiculo);
     return 0;
 }
 
+/* Cria e popula estrutura de veículo a partir do ponteiro de arquivo dado */
 VEICULO_t *leVeiculo(FILE *arq) {
+    // Confere arquivo
     if (!arq)
         return NULL;
 
+    // Estrutura de veículo
     VEICULO_t *veiculo = malloc(sizeof(VEICULO_t));
 
+    // Lê informações iniciais e trata se removido
     char removido; fread(&removido, sizeof(char), 1, arq);
     int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
     if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
@@ -200,6 +207,7 @@ VEICULO_t *leVeiculo(FILE *arq) {
     } else
         veiculo->categoria = NULL;
 
+    // Retorna objeto criado
     return veiculo;
 }
 
@@ -215,6 +223,7 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     if (!tabela || !arq)
         return 1;
 
+    // Se valor de campo a ser pesquisado dado, requer valor de pesquisa
     if (campo && !valor)
         return 1;
 
@@ -226,6 +235,7 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     }
     fseek(arq, sizeof(int64_t), SEEK_CUR);
 
+    // Lê contagem de registros
     int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
     int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
     if (nroRegs == 0) {
@@ -247,6 +257,7 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     fread(modelo, sizeof(char), 17, arq);
     fread(categoria, sizeof(char), 20, arq);
 
+    // Cria valor de pesquisa a partir da string dada
     char *strTratado = strtok(valor, "\"");
     int numTratado;
     if (strTratado)
@@ -255,13 +266,16 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     // Lê registro a registro contabilizando removidos
     int32_t controleRemovidos = 0;
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+        // Lê novo objeto
         VEICULO_t *atual = leVeiculo(arq);
 
+        // Contabiliza se registro removido
         if (arq && !atual) {
             controleRemovidos++;
             continue;
         }
 
+        // Ignora registros não compatíveis caso feita pesquisa por campo
         if (campo) {
             if (!strcmp(campo, "prefixo") && strcmp(atual->prefixo, strTratado)) {
                 destroiVeiculo(atual);
@@ -311,9 +325,9 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
             printf("%d\n", atual->quantidadeLugares);
         else
             printf("campo com valor nulo\n");
-
         printf("\n");
 
+        // Libera registro criado anteriormente
         destroiVeiculo(atual);
     }
 

@@ -137,19 +137,25 @@ int criaTabelaLinhas(char *entrada, char *saida) {
     return 0;
 }
 
+/* Libera memória de estrutura de linha lida */
 int destroiLinha (LINHA_t *linha) {
+    // Confere registro
     if (!linha)
         return 1;
 
+    // Libera memória associada
     free(linha->nomeLinha); free(linha->corLinha);
     free(linha);
     return 0;
 }
 
+/* Cria e popula estrutura de linha a partir do ponteiro de arquivo dado */
 LINHA_t *leObjLinha(FILE *arq) {
+    // Confere arquivo
     if (!arq)
         return NULL;
 
+    // Estrutura de linha
     LINHA_t *linha = malloc(sizeof(LINHA_t));
 
     char removido; fread(&removido, sizeof(char), 1, arq);
@@ -178,6 +184,7 @@ LINHA_t *leObjLinha(FILE *arq) {
     } else
         linha->corLinha = NULL;
 
+    // Retorna objeto criado
     return linha;
 }
 
@@ -192,6 +199,7 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     if (!tabela || !arq)
         return 1;
 
+    // Se valor de campo a ser pesquisado dado, requer valor de pesquisa
     if (campo && !valor)
         return 1;
 
@@ -203,6 +211,7 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     }
     fseek(arq, sizeof(int64_t), SEEK_CUR);
 
+    // Lê contagem de registros
     int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
     int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
     if (nroRegs == 0) {
@@ -220,23 +229,25 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     fread(descreveNome, sizeof(char), 13, arq);
     fread(descreveLinha, sizeof(char), 24, arq);
 
+    // Cria valor de pesquisa a partir da string dada
     char *strTratado = strtok(valor, "\"");
     int numTratado;
     if (strTratado)
         numTratado = atoi(strTratado);
 
-    /* printf(":::::: %d\n", numTratado); */
-
     // Lê registro a registro contabilizando removidos
     int controleRemovidos = 0;
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+        // Lê novo objeto
         LINHA_t *atual = leObjLinha(arq);
 
+        // Contabiliza se registro removido
         if (arq && !atual) {
             controleRemovidos++;
             continue;
         }
 
+        // Ignora registros não compatíveis caso feita pesquisa por campo
         if (campo) {
             if (!strcmp(campo, "codLinha") && (atual->codLinha != numTratado)) {
                 destroiLinha(atual);
@@ -283,8 +294,9 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
                 printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
                 break;
         }
-
         printf("\n");
+
+        // Libera registro criado anteriormente
         destroiLinha(atual);
     }
 
@@ -292,6 +304,10 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     free(descreveCodigo); free(descreveCartao); free(descreveNome); free(descreveLinha);
     // Fecha arquivo da tabela
     fclose(arq);
+
+    // Confere se número de registros removidos correto
+    if (controleRemovidos != nroRemvs)
+        return 1;
 
     return 0;
 }
