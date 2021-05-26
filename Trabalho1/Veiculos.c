@@ -348,7 +348,7 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
 /* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertVeiculo(char *nomeArq, char *registro) {
     // Confere ponteiros passados
-    FILE *tabela = fopen(nomeArq, "rb");
+    FILE *tabela = fopen(nomeArq, "r+b");
     if (!tabela || !registro || !tabela)
         return 1;
 
@@ -356,9 +356,7 @@ int insertVeiculo(char *nomeArq, char *registro) {
     int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
     int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
 
-    fclose(tabela);
-    tabela = fopen(nomeArq, "wb");
-    fseek(tabela, offset, SEEK_SET);
+    fseek(tabela, 0, SEEK_END);
 
     char tempPrefixo[10],
         tempData[25],
@@ -426,8 +424,6 @@ int insertVeiculo(char *nomeArq, char *registro) {
     fseek(tabela, 1, SEEK_SET);
     fwrite(&proxReg, sizeof(int64_t), 1, tabela);
     fwrite(&numReg, sizeof(int32_t), 1, tabela);
-
-    /* printf("::: '%s' '%s' %d %d '%s' '%s'\n", prefixo, data, quantLugares, codLinha, modelo, categoria); */
 
     free(prefixo); free(data); free(modelo); free(categoria);
     fclose(tabela);

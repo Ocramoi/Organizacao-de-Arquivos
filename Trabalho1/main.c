@@ -131,7 +131,6 @@ int main(int argc, char **argv) {
                 if (ret)
                     break;
             }
-            selectAllVeiculos(arqTabela);
             if (ret)
                 printf("Falha no processamento do arquivo.\n");
             else
