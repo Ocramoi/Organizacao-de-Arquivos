@@ -24,4 +24,7 @@ int selectAllVeiculos(char *tabela);
 /* "SELECT * from Veiculos WHERE ..." -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de veículos com [campo] de [valor] */
 int selectVeiculos(char *tabela, char *campo, char *valor);
 
+/* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
+int insertVeiculo(char *nomeArq, char *registro);
+
 #endif // __VEICULOSARQ_H_

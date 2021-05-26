@@ -119,11 +119,27 @@ int main(int argc, char **argv) {
             }
             break;
         }
-        case 7:
+        case 7: {
+            char arqTabela[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %d", &opcao, arqTabela, &num);
+            for (int i = 0; i < num; ++i) {
+                char *registro = leLinha(stdin);
+                ret = insertVeiculo(arqTabela, registro);
+                free(registro);
+                if (ret)
+                    break;
+            }
+            selectAllVeiculos(arqTabela);
+            if (ret)
+                printf("Falha no processamento do arquivo.\n");
+            else
+                FF_binarioNaTela(arqTabela);
+
             break;
+        }
         case 8:
-            break;
-        case 9:
             break;
         default:
             printf("Opção digitada inválida!\n");

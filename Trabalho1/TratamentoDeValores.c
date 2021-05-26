@@ -66,3 +66,13 @@ char *trataData(char *original) {
 
     return tratado;
 }
+
+/* Remove aspas exteriores à string [original] com máximo de [limite] caracteres */
+char *trataAspas(char *original, unsigned int limite) {
+    char *tratada = malloc(sizeof(char) * limite);
+    if (original[0] == '"')
+        sscanf(original, "\"%[^\"]", tratada);
+    else
+        sscanf(original, "%[^\n]", tratada);
+    return tratada;
+}

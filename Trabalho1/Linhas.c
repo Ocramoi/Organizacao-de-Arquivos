@@ -230,7 +230,9 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     fread(descreveLinha, sizeof(char), 24, arq);
 
     // Cria valor de pesquisa a partir da string dada
-    char *strTratado = strtok(valor, "\"");
+    char *strTratado = NULL;
+    if (valor)
+        strTratado = strtok(valor, "\"");
     int numTratado;
     if (strTratado)
         numTratado = atoi(strTratado);

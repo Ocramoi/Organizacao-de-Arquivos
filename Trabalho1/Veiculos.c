@@ -258,7 +258,9 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     fread(categoria, sizeof(char), 20, arq);
 
     // Cria valor de pesquisa a partir da string dada
-    char *strTratado = strtok(valor, "\"");
+    char *strTratado = NULL;
+    if (valor)
+        strTratado = strtok(valor, "\"");
     int numTratado;
     if (strTratado)
         numTratado = atoi(strTratado);
@@ -340,5 +342,94 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     if (controleRemovidos != nroRemvs)
         return 1;
 
+    return 0;
+}
+
+/* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
+int insertVeiculo(char *nomeArq, char *registro) {
+    // Confere ponteiros passados
+    FILE *tabela = fopen(nomeArq, "rb");
+    if (!tabela || !registro || !tabela)
+        return 1;
+
+    fseek(tabela, 1, SEEK_SET);
+    int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
+    int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
+
+    fclose(tabela);
+    tabela = fopen(nomeArq, "wb");
+    fseek(tabela, offset, SEEK_SET);
+
+    char tempPrefixo[10],
+        tempData[25],
+        tempModelo[100],
+        tempCategoria[100],
+        tempQuantLugar[50],
+        tempCodLinha[50],
+        resto[150];
+    sscanf(registro, "\"%[^\"]\" %s %s %s %[^\n]", tempPrefixo, tempData, tempQuantLugar, tempCodLinha, resto);
+    if (resto[0] == '"')
+        sscanf(resto, "\"%[^\"]\" %s", tempModelo, tempCategoria);
+    else
+        sscanf(resto, "%s %s", tempModelo, tempCategoria);
+
+    char *prefixo = trataAspas(tempPrefixo, 10),
+        *data = trataAspas(tempData, 25),
+        *modelo = trataAspas(tempModelo, 100),
+        *categoria = trataAspas(tempCategoria, 50);
+    int32_t quantLugares, codLinha;
+
+    if (!strcmp(data, "NULO")) {
+        data = realloc(data, 1);
+        data[0] = '\0';
+    }
+
+    if (!strcmp(modelo, "NULO")) {
+        modelo = realloc(modelo, 1);
+        modelo[0] = '\0';
+    }
+
+    if (!strcmp(categoria, "NULO")) {
+        categoria = realloc(categoria, 1);
+        categoria[0] = '\0';
+    }
+
+    if (!strcmp(tempQuantLugar, "NULO"))
+        quantLugares = -1;
+    else
+        quantLugares = atoi(tempQuantLugar);
+
+    if (!strcmp(tempCodLinha, "NULO"))
+        codLinha = -1;
+    else
+        codLinha = atoi(tempCodLinha);
+
+    fwrite("1", sizeof(char), 1, tabela);
+    int32_t tamModelo = strlen(modelo),
+        tamCategoria = strlen(categoria),
+        tam = 31 + tamModelo + tamCategoria;
+    fwrite(&tam, sizeof(int32_t), 1, tabela);
+    fwrite(prefixo, sizeof(char), 5, tabela);
+    if (strlen(data))
+        fwrite(data, sizeof(char), 10, tabela);
+    else
+        fwrite("\0@@@@@@@@@", sizeof(char), 10, tabela);
+    fwrite(&quantLugares, sizeof(int32_t), 1, tabela);
+    fwrite(&codLinha, sizeof(int32_t), 1, tabela);
+    fwrite(&tamModelo, sizeof(int32_t), 1, tabela);
+    fwrite(modelo, sizeof(char), tamModelo, tabela);
+    fwrite(&tamCategoria, sizeof(int32_t), 1, tabela);
+    fwrite(categoria, sizeof(char), tamCategoria, tabela);
+
+    int64_t proxReg = offset + tam + 5;
+    numReg++;
+    fseek(tabela, 1, SEEK_SET);
+    fwrite(&proxReg, sizeof(int64_t), 1, tabela);
+    fwrite(&numReg, sizeof(int32_t), 1, tabela);
+
+    /* printf("::: '%s' '%s' %d %d '%s' '%s'\n", prefixo, data, quantLugares, codLinha, modelo, categoria); */
+
+    free(prefixo); free(data); free(modelo); free(categoria);
+    fclose(tabela);
     return 0;
 }
