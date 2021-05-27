@@ -24,4 +24,7 @@ int selectAllLinhas(char *tabela);
 /* "SELECT * from Linhas WHERE ..." -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de linhas com [campo] de [valor] */
 int selectLinhas(char *tabela, char *campo, char *valor);
 
+/* "INSERT INTO Linha ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
+int insertLinha(char *nomeArq, char *registro);
+
 #endif // __LINHAS_H_

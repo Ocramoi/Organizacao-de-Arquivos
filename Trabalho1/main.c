@@ -1,13 +1,6 @@
 /*
-** NOTE: Funções implementadas: [1], [2], [3], [4], [5], [6]
-** TODO: Iniciar a implementação da função 5 e 6 sobre os dados.
-**
-** Comentarios Clayton: Os maiores problemas na hash eram sobre a gravação do tamanho do registro e byteofset, tbm na conferência da abertura do arquivo; 
-** Importante: Uma curiosidade que não consegui encontrar o motivo, o byteofset da função [1] conta do valor 1 em diante, da função [2] conta do 0, talvez seja bom rever.
-** Função [5] esboçada inicialmente, funciona com prefixo XXXXX, os outros casos não estão implementados...
-**
-** Comentários Marco: funções 3, 4, 5 e 6 implementadas e funcionando (inclusive no run.codes), só falta a 7/8 vamo que vamo dale
-**
+** NOTE: Funções implementadas: [1], [2], [3], [4], [5], [6], [7] e [8]
+**       Verificação positiva para todos de teste no run.codes 10/10
  */
 
 /*
@@ -55,7 +48,8 @@ int main(int argc, char **argv) {
                 printf("Falha no processamento do arquivo.\n");
             break;
         }
-        case 3: {
+        // Funções [3] e [4] -> "Select * FROM"
+        case 3: { 
             char arqEntrada[100];
             sscanf(entrada, "%d %s", &opcao, arqEntrada);
             switch (selectAllVeiculos(arqEntrada)) {
@@ -85,6 +79,7 @@ int main(int argc, char **argv) {
             }
             break;
         }
+        // Funções [5] e [6] -> "SELECT * from WHERE"
         case 5: {
             char arqEntrada[100],
                  nomeDoCampo[100],
@@ -119,6 +114,7 @@ int main(int argc, char **argv) {
             }
             break;
         }
+        // Funções [7] e [8] -> "INSERT INTO"
         case 7: {
             char arqTabela[100];
             int num,
@@ -138,8 +134,24 @@ int main(int argc, char **argv) {
 
             break;
         }
-        case 8:
+        case 8: {
+            char arqTabela[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %d", &opcao, arqTabela, &num);
+            for (int i = 0; i < num; ++i) {
+                char *registro = leLinha(stdin);
+                ret = insertLinha(arqTabela, registro);
+                free(registro);
+                if (ret)
+                    break;
+            }
+            if (ret)
+                printf("Falha no processamento do arquivo.\n");
+            else
+                FF_binarioNaTela(arqTabela);
             break;
+        }
         default:
             printf("Opção digitada inválida!\n");
             break;

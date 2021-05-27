@@ -352,12 +352,24 @@ int insertVeiculo(char *nomeArq, char *registro) {
     if (!tabela || !registro || !tabela)
         return 1;
 
-    fseek(tabela, 1, SEEK_SET);
+    // Checa o status do arquivo [nomeArq] para o [registro] ser escrito 
+    char status; fread(&status, sizeof(char), 1, tabela);
+    if (status != '1') {
+        fclose(tabela);
+        return 1;
+    }
+
+    // Altera o status do arquivo para em uso [0] 
+    fseek(tabela, 0, SEEK_SET);
+    fwrite("0", sizeof(char), 1, tabela);
+    // Busca os campos armazenados no cabeçalho do arquivo [nomeArq] byte offset [offset] e numeros de registros [numReg]
     int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
     int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
 
+    // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
     fseek(tabela, 0, SEEK_END);
 
+    // Variáveis de armazenamento dos dados de [registro]
     char tempPrefixo[10],
         tempData[25],
         tempModelo[100],
@@ -365,12 +377,15 @@ int insertVeiculo(char *nomeArq, char *registro) {
         tempQuantLugar[50],
         tempCodLinha[50],
         resto[150];
+   
+    // Leitura dos dados de [registro] e alocação
     sscanf(registro, "\"%[^\"]\" %s %s %s %[^\n]", tempPrefixo, tempData, tempQuantLugar, tempCodLinha, resto);
     if (resto[0] == '"')
         sscanf(resto, "\"%[^\"]\" %s", tempModelo, tempCategoria);
     else
         sscanf(resto, "%s %s", tempModelo, tempCategoria);
-
+    
+    // Trata os dados de [registro] inseridos
     char *prefixo = trataAspas(tempPrefixo, 10),
         *data = trataAspas(tempData, 25),
         *modelo = trataAspas(tempModelo, 100),
@@ -402,6 +417,7 @@ int insertVeiculo(char *nomeArq, char *registro) {
     else
         codLinha = atoi(tempCodLinha);
 
+    // Escrita dos dados de [registro] no arquivo [nomeArq] já posicionado no final [offset]
     fwrite("1", sizeof(char), 1, tabela);
     int32_t tamModelo = strlen(modelo),
         tamCategoria = strlen(categoria),
@@ -419,13 +435,21 @@ int insertVeiculo(char *nomeArq, char *registro) {
     fwrite(&tamCategoria, sizeof(int32_t), 1, tabela);
     fwrite(categoria, sizeof(char), tamCategoria, tabela);
 
+    // Atualização do número de registros [numReg], byte offset [offset]
     int64_t proxReg = offset + tam + 5;
     numReg++;
     fseek(tabela, 1, SEEK_SET);
     fwrite(&proxReg, sizeof(int64_t), 1, tabela);
     fwrite(&numReg, sizeof(int32_t), 1, tabela);
 
+    // Atualização do status do arquivo [nomeArq]
+    fseek(tabela, 0, SEEK_SET);
+    fwrite("1", sizeof(char), 1, tabela);
+
+    // Libera memória alocada
     free(prefixo); free(data); free(modelo); free(categoria);
+
+    // Fecha o arquivo
     fclose(tabela);
     return 0;
 }

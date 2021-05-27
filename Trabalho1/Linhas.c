@@ -1,5 +1,6 @@
 #include "Linhas.h"
 #include "LeLinha.h"
+#include "TratamentoDeValores.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -311,5 +312,110 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     if (controleRemovidos != nroRemvs)
         return 1;
 
+    return 0;
+}
+
+/* "INSERT INTO Linha ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
+int insertLinha(char *nomeArq, char *registro) {
+    // Confere ponteiros passados
+    FILE *tabela = fopen(nomeArq, "r+b");
+    if (!tabela || !registro || !tabela)
+        return 1;
+
+    // Checa o status do arquivo [nomeArq] para o [registro] ser escrito 
+    char status; fread(&status, sizeof(char), 1, tabela);
+    if (status != '1') {
+        fclose(tabela);
+        return 1;
+    }
+
+    // Altera o status do arquivo para em uso [0] 
+    fseek(tabela, 0, SEEK_SET);
+    fwrite("0", sizeof(char), 1, tabela);
+    // Busca os campos armazenados no cabeçalho do arquivo [nomeArq] byte offset [offset] e numeros de registros inseridos e [numReg] removidos [numRegRemovidos]
+    int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
+    int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
+    int32_t numRegRemovidos; fread(&numRegRemovidos, sizeof(int32_t), 1, tabela);
+
+    // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
+    fseek(tabela, 0, SEEK_END);
+
+    // Variáveis de armazenamento dos dados de [registro]
+    char tempCodLinha[10],
+        tempAceitaCartao[10],
+        tempNomeLinha[100],
+        tempCorLinha[100],
+        resto[250];
+   
+    // Leitura dos dados de [registro] e alocação
+    sscanf(registro, "%s %[^\n]", tempCodLinha, resto);
+    if (resto[0] == '"')
+        sscanf(resto, "\"%[^\"]\" %[^\n]", tempAceitaCartao, resto);
+    else
+        sscanf(resto, "%s %[^\n]", tempAceitaCartao, resto);
+    if (resto[0] == '"')
+        sscanf(resto, "\"%[^\"]\" %[^\n]", tempNomeLinha, tempCorLinha);
+    else
+        sscanf(resto, "%s %[^\n]", tempNomeLinha, tempCorLinha);
+    
+    // Trata os dados de [registro] inseridos
+    char *aceitaCartao = trataAspas(tempAceitaCartao, 10),
+        *nomeLinha = trataAspas(tempNomeLinha, 100),
+        *corLinha = trataAspas(tempCorLinha, 100);
+
+    if (tempCodLinha[0] == '*') {
+        memmove(tempCodLinha, tempCodLinha+1, strlen(tempCodLinha));
+        numRegRemovidos += 1;
+        fwrite("0", sizeof(char), 1, tabela); // Incrementa registros removidos em 1, e define 0 no arquivo.
+    }
+    else {
+        numReg += 1;
+        fwrite("1", sizeof(char), 1, tabela); // Incrementa registros em 1, e define 1 no arquivo.
+    } 
+    int32_t codLinha= atoi(tempCodLinha);
+
+    if (!strcmp(aceitaCartao, "NULO")) {
+        aceitaCartao = realloc(aceitaCartao, 1);
+        aceitaCartao[0] = '\0';
+    }
+
+    if (!strcmp(nomeLinha, "NULO")) {
+        nomeLinha = realloc(nomeLinha, 1);
+        nomeLinha[0] = '\0';
+    }
+
+    if (!strcmp(corLinha, "NULO")) {
+        corLinha = realloc(corLinha, 1);
+        corLinha[0] = '\0';
+    }
+
+    // Escrita dos dados de [registro] no arquivo [nomeArq] já posicionado no final [offset]
+    int32_t tamNome = strlen(nomeLinha),
+        tamCor = strlen(corLinha),
+        tam = 13 + tamNome + tamCor;
+    fwrite(&tam, sizeof(int32_t), 1, tabela);
+    fwrite(&codLinha, sizeof(int32_t), 1, tabela);
+    fwrite(aceitaCartao, sizeof(char), 1, tabela); 
+    fwrite(&tamNome, sizeof(int32_t), 1, tabela);
+    fwrite(nomeLinha, sizeof(char), tamNome, tabela);
+    fwrite(&tamCor, sizeof(int32_t), 1, tabela);
+    fwrite(corLinha, sizeof(char), tamCor, tabela);
+
+    // Atualização do número de registros [numReg], byte offset [offset]
+    int64_t proxReg = offset + tam + 5;
+    fseek(tabela, 1, SEEK_SET);
+    fwrite(&proxReg, sizeof(int64_t), 1, tabela);
+    fwrite(&numReg, sizeof(int32_t), 1, tabela);
+    fwrite(&numRegRemovidos, sizeof(int32_t), 1, tabela);
+
+    // Atualização do status do arquivo [nomeArq]
+    fseek(tabela, 0, SEEK_SET);
+    fwrite("1", sizeof(char), 1, tabela);
+
+    // Libera memória alocada
+    free(aceitaCartao); free(nomeLinha); free(corLinha);
+
+    // Fecha o arquivo
+    fclose(tabela);
     return 0;
 }
