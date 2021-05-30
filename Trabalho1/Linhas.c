@@ -194,6 +194,7 @@ int selectAllLinhas(char *tabela) {
     return selectLinhas(tabela, NULL, NULL);
 }
 
+/* "SELECT * from Linhas WHERE ..." -> Seleciona e exibe todos os registros do arquivo binário de nome [tabela] de linhas com [campo] de [valor] */
 int selectLinhas(char *tabela, char *campo, char *valor) {
     // Testa nome de arquivo e arquivo aberto
     FILE *arq = fopen(tabela, "rb");
