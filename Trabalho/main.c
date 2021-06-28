@@ -167,6 +167,24 @@ int main(int argc, char **argv) {
 
             break;
         }
+        case 9: {
+            // Lê entrada
+            char arqEntrada[100],
+                 arqIndice[100];
+            sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqIndice);
+            // Processa possíveis saídas de erro
+            /* switch (selectLinhas(arqEntrada, nomeDoCampo, valor)) { */
+            /*     case -1: */
+            /*         printf("Registro inexistente.\n"); */
+            /*         break; */
+            /*     case 1: */
+            /*         printf("Falha no processamento do arquivo.\n"); */
+            /*         break; */
+            /*     default: */
+            /*         break; */
+            /* } */
+            break;
+        }
         default:
             printf("Opção digitada inválida!\n");
             break;

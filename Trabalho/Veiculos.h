@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#define TAM_PAGINA 77
+
 // Estrutura dado do registro de cada veículo (Registro de Dados)
 typedef struct {
     char removido,
@@ -26,5 +28,8 @@ int selectVeiculos(char *tabela, char *campo, char *valor);
 
 /* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertVeiculo(char *nomeArq, char *registro);
+
+/* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
+int criaArvoreVeiculos(char *arvore, char *tabela);
 
 #endif // __VEICULOSARQ_H_

@@ -6,6 +6,20 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
+int criaArvoreVeiculos(char *tabela, char *arvore) {
+    FILE *arqTabela = fopen(tabela, "w+"),
+        *arqSaida = fopen(arvore, "r");
+    if (!arqTabela || !arqSaida ||
+        !arvore || !tabela)
+        return -1;
+
+    fputc('0', arqSaida);
+    fseek(arqSaida, 77, SEEK_SET);
+
+    return 0;
+}
+
 /* Adiciona veículo a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
     // Trata erro de ponteiros
