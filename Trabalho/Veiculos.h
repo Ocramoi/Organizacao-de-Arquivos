@@ -4,8 +4,6 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#define TAM_PAGINA 77
-
 // Estrutura dado do registro de cada veículo (Registro de Dados)
 typedef struct {
     char removido,

@@ -1,6 +1,8 @@
 #include "Veiculos.h"
 #include "LeLinha.h"
 #include "TratamentoDeValores.h"
+#include "convertePrefixo.h"
+#include "ArvoreB.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -8,14 +10,67 @@
 
 /* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
 int criaArvoreVeiculos(char *tabela, char *arvore) {
-    FILE *arqTabela = fopen(tabela, "w+"),
-        *arqSaida = fopen(arvore, "r");
+    FILE *arqTabela = fopen(tabela, "r"),
+        *arqSaida = fopen(arvore, "w+");
     if (!arqTabela || !arqSaida ||
         !arvore || !tabela)
         return -1;
 
+    int32_t rnnRaiz = -1,
+        rnnProx = 0;
+
     fputc('0', arqSaida);
     fseek(arqSaida, 77, SEEK_SET);
+
+    // Lê e confere status do arquivo
+    char status; fread(&status, sizeof(char), 1, arqTabela);
+    if (status != '1') {
+        fclose(arqSaida);
+        fclose(arqTabela);
+        return 1;
+    }
+    fseek(arqTabela, sizeof(int64_t), SEEK_CUR);
+
+    int32_t nroRegs,
+        nroRems;
+    fread(&nroRegs, sizeof(int32_t), 1, arqTabela);
+    fread(&nroRems, sizeof(int32_t), 1, arqTabela);
+
+    if (nroRegs <= 0) {
+        fclose(arqSaida);
+        fclose(arqTabela);
+        return 1;
+    }
+
+    fseek(arqTabela, 174*sizeof(char), SEEK_SET);
+
+    NO_ARVB_t *tempNo = criaNoArvB();
+    for (int nReg = 0; nReg < (nroRegs + nroRems); ++nReg) {
+        char removido; fread(&removido, sizeof(char), 1, arqTabela);
+        int32_t tamReg; fread(&tamReg, sizeof(int32_t), 1, arqTabela);
+        if (removido == '0') {
+            fseek(arqTabela, tamReg, SEEK_CUR);
+            continue;
+        }
+
+        char *prefixo = calloc(6, sizeof(char)),
+            *data = calloc(11, sizeof(char));
+        fread(prefixo, sizeof(char), 5, arqTabela);
+        fread(data, sizeof(char), 10, arqTabela);
+
+        if (rnnRaiz == -1)
+            tempNo->folha = '1';
+
+        if (tempNo->nroChavesIndexadas < REGS_FOLHA) {
+            tempNo->registros[tempNo->nroChavesIndexadas].chave = convertePrefixo();
+        }
+    }
+
+    fseek(arqSaida, 1, SEEK_SET);
+    fwrite(&rnnRaiz, sizeof(int32_t), 1, arqSaida);
+    fwrite(&rnnProx, sizeof(int32_t), 1, arqSaida);
+    for (int i = 0; i < 68; ++i)
+        fputc('@', arqSaida);
 
     return 0;
 }
