@@ -1,5 +1,27 @@
 #include "ArvoreB.h"
 
+int escreveNoArvB(ARVB_t *arv,
+                  NO_ARVB_t *no,
+                  int64_t rnn) {
+    if (!arv || !arv->arq)
+        return 1;
+
+    fseek(arv->arq, TAM_PAGINA*(rnn + 1), SEEK_SET);
+
+    fwrite(&(no->folha), sizeof(char), 1, arv->arq);
+    fwrite(&(no->nroChavesIndexadas), sizeof(int32_t), 1, arv->arq);
+    fwrite(&(no->rrnNo), sizeof(int32_t), 1, arv->arq);
+
+    for (int i = 0; i < REGS_FOLHA; ++i) {
+        fwrite(&(no->ponteirosNos[i]), sizeof(int32_t), 1, arv->arq);
+        fwrite(&(no->registros[i].chave), sizeof(int32_t), 1, arv->arq);
+        fwrite(&(no->registros[i].ponteiroRegistro), sizeof(int32_t), 1, arv->arq);
+    }
+    fwrite(&(no->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arv->arq);
+
+    return 0;
+}
+
 NO_ARVB_t* criaNoArvB() {
     NO_ARVB_t *arv = NULL;
     arv = malloc(sizeof(NO_ARVB_t));
@@ -14,45 +36,7 @@ NO_ARVB_t* criaNoArvB() {
     return arv;
 }
 
-ARVB_t *criaArvB(FILE* arquivo) {
-    if (!arquivo)
-        return NULL;
-
-    ARVB_t *arv = malloc(sizeof(ARVB_t));
-    if (!arv)
-        return NULL;
-
-    arv->noRaiz = -1;
-    arv->numNos = 0;
-    arv->arq = arquivo;
-
-    return arv;
-}
-
-int adicionaRegistroArvB(ARVB_t *arvore, int chave, int offsetRegistro) {
-    NO_ARVB_t *tempNo = criaNoArvB();
-    if (arvore->noRaiz == -1) {
-        tempNo->folha = '1';
-        tempNo->rrnNo = 0;
-        arvore->noRaiz = tempNo->rrnNo;
-    }
-
-    // Caso inicial -> nó atual raíz
-    if (arvore->noRaiz == tempNo->rrnNo) {
-        // Caso nó raíz não cheio
-        if (tempNo->nroChavesIndexadas < REGS_FOLHA) {
-            tempNo->registros[tempNo->nroChavesIndexadas].chave = chave;
-            tempNo->registros[tempNo->nroChavesIndexadas].ponteiroRegistro = offsetRegistro;
-
-            tempNo->nroChavesIndexadas++;
-        }
-
-    }
-
-    return 0;
-}
-
-NO_ARVB_t *noRnnArvB(ARVB_t *arv, int rnn) {
+NO_ARVB_t *leNoArvB(ARVB_t *arv, int rnn) {
     if (!arv || !arv->arq)
         return NULL;
 
@@ -75,22 +59,31 @@ NO_ARVB_t *noRnnArvB(ARVB_t *arv, int rnn) {
     return noTemp;
 }
 
-int escreveNoArvB(ARVB_t *arv, NO_ARVB_t *no) {
-    if (!arv || !arv->arq)
-        return 1;
+ARVB_t *criaArvB(FILE* arquivo) {
+    if (!arquivo)
+        return NULL;
 
-    fseek(arv->arq, TAM_PAGINA*(arv->numNos + 1), SEEK_SET);
+    ARVB_t *arv = malloc(sizeof(ARVB_t));
+    if (!arv)
+        return NULL;
 
-    fwrite(&(no->folha), sizeof(char), 1, arv->arq);
-    fwrite(&(no->nroChavesIndexadas), sizeof(int32_t), 1, arv->arq);
-    fwrite(&(no->rrnNo), sizeof(int32_t), 1, arv->arq);
+    arv->noRaiz = 0;
+    arv->numNos = 1;
+    arv->arq = arquivo;
 
-    for (int i = 0; i < REGS_FOLHA; ++i) {
-        fwrite(&(no->ponteirosNos[i]), sizeof(int32_t), 1, arv->arq);
-        fwrite(&(no->registros[i].chave), sizeof(int32_t), 1, arv->arq);
-        fwrite(&(no->registros[i].ponteiroRegistro), sizeof(int32_t), 1, arv->arq);
-    }
-    fwrite(&(no->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arv->arq);
+    NO_ARVB_t *tempNo = criaNoArvB();
+    tempNo->folha = '0';
+    escreveNoArvB(arv, tempNo, 0);
 
+    return arv;
+}
+
+int adicionaRegistroArvB(ARVB_t *arvore,
+                         int chave,
+                         int offsetRegistro) {
+    NO_ARVB_t *tempNo = leNoArvB(arvore, arvore->noRaiz);
+
+
+    free(tempNo);
     return 0;
 }
