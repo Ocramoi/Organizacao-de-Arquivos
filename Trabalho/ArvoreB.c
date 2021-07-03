@@ -72,7 +72,7 @@ ARVB_t *criaArvB(FILE* arquivo) {
     arv->arq = arquivo;
 
     NO_ARVB_t *tempNo = criaNoArvB();
-    tempNo->folha = '0';
+    tempNo->folha = '1';
     escreveNoArvB(arv, tempNo, 0);
 
     return arv;
