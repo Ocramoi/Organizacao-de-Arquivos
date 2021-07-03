@@ -44,8 +44,15 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
 
     fseek(arqTabela, 174*sizeof(char), SEEK_SET);
 
-    NO_ARVB_t *tempNo = criaNoArvB();
+    ARVB_t *arv = criaArvB(arqSaida);
+    if (!arv) {
+        fclose(arqSaida);
+        fclose(arqTabela);
+        return 1;
+    }
+
     for (int nReg = 0; nReg < (nroRegs + nroRems); ++nReg) {
+        long ponteiroAtual = ftell(arqTabela);
         char removido; fread(&removido, sizeof(char), 1, arqTabela);
         int32_t tamReg; fread(&tamReg, sizeof(int32_t), 1, arqTabela);
         if (removido == '0') {
@@ -53,17 +60,15 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
             continue;
         }
 
-        char *prefixo = calloc(6, sizeof(char)),
-            *data = calloc(11, sizeof(char));
+        int proxOffset = ftell(arqTabela) + tamReg;
+        char *prefixo = calloc(6, sizeof(char));
         fread(prefixo, sizeof(char), 5, arqTabela);
-        fread(data, sizeof(char), 10, arqTabela);
 
-        if (rnnRaiz == -1)
-            tempNo->folha = '1';
+        adicionaRegistroArvB(arv,
+                             convertePrefixo(prefixo),
+                             ponteiroAtual);
 
-        if (tempNo->nroChavesIndexadas < REGS_FOLHA) {
-            tempNo->registros[tempNo->nroChavesIndexadas].chave = convertePrefixo();
-        }
+        fseek(arqTabela, proxOffset, SEEK_SET);
     }
 
     fseek(arqSaida, 1, SEEK_SET);

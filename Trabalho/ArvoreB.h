@@ -5,6 +5,7 @@
 #define REGS_FOLHA 4
 
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct {
     int32_t chave;
@@ -19,6 +20,14 @@ typedef struct {
     CONJUNTO_CHAVE_PONTEIRO_t registros[REGS_FOLHA];
 } NO_ARVB_t;
 
-NO_ARVB_t* criaNoArvB();
+typedef struct {
+    int64_t noRaiz,
+        numNos;
+    FILE *arq;
+} ARVB_t;
+
+ARVB_t *criaArvB(FILE* arquivo);
+
+int adicionaRegistroArvB(ARVB_t *arvore, int chave, int offsetRegistro);
 
 #endif // __ARVOREB_H_
