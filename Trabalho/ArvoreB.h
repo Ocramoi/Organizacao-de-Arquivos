@@ -23,11 +23,13 @@ typedef struct {
 typedef struct {
     int64_t noRaiz,
         numNos;
-    FILE *arq;
+    char *nomeArq;
 } ARVB_t;
 
-ARVB_t *criaArvB(FILE* arquivo);
+ARVB_t *criaArvB(char *nomeArquivo);
 
-int adicionaRegistroArvB(ARVB_t *arvore, int chave, int offsetRegistro);
+int adicionaRegistroArvB(ARVB_t *arvore,
+                         int chave,
+                         int offsetRegistro);
 
 #endif // __ARVOREB_H_
