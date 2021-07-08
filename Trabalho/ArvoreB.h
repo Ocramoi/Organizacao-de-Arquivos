@@ -22,7 +22,8 @@ typedef struct {
 
 typedef struct {
     int64_t noRaiz,
-        numNos;
+        numNos,
+        proxNo;
     char *nomeArq;
 } ARVB_t;
 

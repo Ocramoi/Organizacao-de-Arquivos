@@ -4,7 +4,6 @@
 // Definições
 int escreveNoArvB(ARVB_t *arv,
                   NO_ARVB_t *no,
-                  int32_t rrn,
                   char raiz);
 NO_ARVB_t* criaNoArvB();
 NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn);
@@ -12,11 +11,12 @@ int adicionaRegistroRRNArvB(ARVB_t *arv,
                             int rrn,
                             int chave,
                             int offsetRegistro);
+int escreveCabecalhoArvB(ARVB_t *arvore,
+                         FILE *arqArvore);
 
 // Implementação
 int escreveNoArvB(ARVB_t *arv,
                   NO_ARVB_t *no,
-                  int32_t rrn,
                   char raiz) {
     if (!arv || !arv->nomeArq)
         return 1;
@@ -34,7 +34,7 @@ int escreveNoArvB(ARVB_t *arv,
     fseek(arq, 0, SEEK_SET);
     fwrite("0", sizeof(char), 1, arq);
 
-    fseek(arq, TAM_PAGINA*(rrn + 1), SEEK_SET);
+    fseek(arq, TAM_PAGINA*(no->rrnNo + 1), SEEK_SET);
 
     fwrite(&(no->folha), sizeof(char), 1, arq);
     fwrite(&(no->nroChavesIndexadas), sizeof(int32_t), 1, arq);
@@ -50,7 +50,7 @@ int escreveNoArvB(ARVB_t *arv,
     fseek(arq, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, arq);
     if (raiz)
-        fwrite(&rrn, sizeof(int32_t), 1, arq);
+        fwrite(&(no->rrnNo), sizeof(int32_t), 1, arq);
     else
         fwrite(&noRaiz, sizeof(int32_t), 1, arq);
     fwrite(&rrnProxNo, sizeof(int32_t), 1, arq);
@@ -77,7 +77,7 @@ NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn) {
     if (!arvore || !arvore->nomeArq)
         return NULL;
 
-    FILE *arq = fopen(arvore->nomeArq, "r");
+    FILE *arq = fopen(arvore->nomeArq, "rb");
 
     fseek(arq, TAM_PAGINA*(rrn + 1), SEEK_SET);
 
@@ -97,6 +97,32 @@ NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn) {
     return noTemp;
 }
 
+int escreveCabecalhoArvB(ARVB_t *arvore,
+                         FILE *arqArvore) {
+    if (!arvore || !arvore->nomeArq)
+        return 1;
+
+    FILE *arq = arqArvore;
+    if (!arq)
+        arq = fopen(arvore->nomeArq, "r+b");
+
+    long initOffset = ftell(arqArvore);
+
+    fseek(arqArvore, 0, SEEK_SET);
+    fwrite("1", sizeof(char), 1, arq);
+    fwrite(&(arvore->noRaiz), sizeof(int32_t), 1, arq);
+    fwrite(&(arvore->proxNo), sizeof(int32_t), 1, arq);
+    for (int i = 0; i < 68; ++i)
+        fwrite("@", sizeof(char), 1, arq);
+
+    if (arqArvore)
+        fseek(arqArvore, initOffset, SEEK_SET);
+    else
+        fclose(arq);
+
+    return 0;
+}
+
 ARVB_t *criaArvB(char *arquivo) {
     if (!arquivo)
         return NULL;
@@ -107,9 +133,10 @@ ARVB_t *criaArvB(char *arquivo) {
 
     arv->noRaiz = 0;
     arv->numNos = 1;
+    arv->proxNo = 1;
     arv->nomeArq = arquivo;
 
-    FILE *arq = fopen(arquivo, "w+");
+    FILE *arq = fopen(arquivo, "w+b");
     fwrite("1", sizeof(char), 1, arq);
     fwrite(&(arv->noRaiz), sizeof(int32_t), 1, arq);
     fwrite(&(arv->noRaiz), sizeof(int32_t), 1, arq);
@@ -119,7 +146,8 @@ ARVB_t *criaArvB(char *arquivo) {
 
     NO_ARVB_t *tempNo = criaNoArvB();
     tempNo->folha = '1';
-    escreveNoArvB(arv, tempNo, 0, 1);
+    tempNo->rrnNo = 0;
+    escreveNoArvB(arv, tempNo, 1);
     free(tempNo);
 
     return arv;
@@ -143,13 +171,23 @@ int adicionaRegistroRRNArvB(ARVB_t *arv,
                             int chave,
                             int offsetRegistro) {
     NO_ARVB_t *tempNo = leNoArvB(arv, rrn);
+
     if (tempNo->folha != '1') {
         int pos;
         for (pos = 0; pos < tempNo->nroChavesIndexadas; ++pos)
             if (tempNo->registros[pos].chave > chave)
                 break;
+
+        if (tempNo->ponteirosNos[pos] == -1) {
+            tempNo->ponteirosNos[pos] = arv->proxNo;
+            arv->proxNo++;
+            escreveCabecalhoArvB(arv, NULL);
+            escreveNoArvB(arv, tempNo, (tempNo->rrnNo == arv->noRaiz));
+        }
+
+        int prox = tempNo->ponteirosNos[pos];
         free(tempNo);
-        return adicionaRegistroRRNArvB(arv, pos, chave, offsetRegistro);
+        return adicionaRegistroRRNArvB(arv, prox, chave, offsetRegistro);
     }
 
     if (tempNo->nroChavesIndexadas < REGS_FOLHA) {
@@ -168,13 +206,19 @@ int adicionaRegistroRRNArvB(ARVB_t *arv,
         tempNo->registros[pos].chave = chave;
         tempNo->registros[pos].ponteiroRegistro = offsetRegistro;
 
-        for (int i = 0; i < (REGS_FOLHA - pos); ++i) {
-            tempNo->registros[pos + i].chave = registros[pos + i].chave;
-            tempNo->registros[pos + i].ponteiroRegistro = registros[pos + i].ponteiroRegistro;
+        for (int i = pos + 1; i < REGS_FOLHA; ++i) {
+            tempNo->registros[i].chave = registros[i].chave;
+            tempNo->registros[i].ponteiroRegistro = registros[i].ponteiroRegistro;
         }
 
-        escreveNoArvB(arv, tempNo, tempNo->rrnNo, (tempNo->rrnNo == arv->noRaiz));
+        int ret = 0;
+        if (escreveNoArvB(arv, tempNo, (tempNo->rrnNo == arv->noRaiz)))
+            ret = 1;
+        free(tempNo);
+        return ret;
     }
+
+
 
     free(tempNo);
     return 0;
