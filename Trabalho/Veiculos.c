@@ -551,5 +551,44 @@ int exibeVeiculoOffset(char *tabela, int64_t offset) {
 }
 
 /* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
-/* int criaArvoreVeiculos(char *tabela, char *arvore) { */
-/* } */
+int criaArvoreVeiculos(char *tabela, char *arvore) {
+    // Testa nome de arquivo e arquivo aberto
+    FILE *arqTabela = fopen(tabela, "rb");
+    if (!tabela || !arqTabela)
+        return 1;
+
+    // Lê e confere status do arquivo
+    char status; fread(&status, sizeof(char), 1, arqTabela);
+    if (status != '1') {
+        fclose(arqTabela);
+        return 1;
+    }
+    fseek(arqTabela, sizeof(int64_t), SEEK_CUR);
+
+    // Lê contagem de registros
+    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arqTabela);
+    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arqTabela);
+    if (nroRegs == 0) {
+        fclose(arqTabela);
+        return -1;
+    }
+    fseek(arqTabela, 174, SEEK_SET);
+
+    ARVB_t *arvoreVeiculos = populaArvB(arvore);
+    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+        int64_t offsetAtual = ftell(arqTabela);
+        VEICULO_t *veiculoAtual = leVeiculo(arqTabela);
+        if (!veiculoAtual) {
+            fclose(arqTabela);
+            return 1;
+        }
+        if (!veiculoAtual->removido) {
+            destroiVeiculo(veiculoAtual);
+            continue;
+        }
+        adicionaRegistroArvB(arvoreVeiculos, convertePrefixo(veiculoAtual->prefixo), offsetAtual);
+    }
+    free(arvoreVeiculos);
+    fclose(arqTabela);
+    return 0;
+}

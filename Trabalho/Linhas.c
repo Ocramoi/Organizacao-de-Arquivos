@@ -514,3 +514,46 @@ int exibeLinhaOffset(char *tabela, int64_t offset) {
 
     return 0;
 }
+
+/* "CREATE INDEX ... Linhas" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
+int criaArvoreLinhas(char *tabela, char *arvore) {
+    // Testa nome de arquivo e arquivo aberto
+    FILE *arqTabela = fopen(tabela, "rb");
+    if (!tabela || !arqTabela)
+        return 1;
+
+    // Lê e confere status do arquivo
+    char status; fread(&status, sizeof(char), 1, arqTabela);
+    if (status != '1') {
+        fclose(arqTabela);
+        return 1;
+    }
+    fseek(arqTabela, sizeof(int64_t), SEEK_CUR);
+
+    // Lê contagem de registros
+    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arqTabela);
+    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arqTabela);
+    if (nroRegs == 0) {
+        fclose(arqTabela);
+        return -1;
+    }
+    fseek(arqTabela, 82, SEEK_SET);
+
+    ARVB_t *arvoreLinhas = populaArvB(arvore);
+    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+        int64_t offsetAtual = ftell(arqTabela);
+        LINHA_t *linhaAtual = leObjLinha(arqTabela);
+        if (!linhaAtual) {
+            fclose(arqTabela);
+            return 1;
+        }
+        if (!linhaAtual->removido) {
+            destroiLinha(linhaAtual);
+            continue;
+        }
+        adicionaRegistroArvB(arvoreLinhas, linhaAtual->codLinha, offsetAtual);
+    }
+    free(arvoreLinhas);
+    fclose(arqTabela);
+    return 0;
+}

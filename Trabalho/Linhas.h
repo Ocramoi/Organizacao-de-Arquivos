@@ -27,6 +27,9 @@ int selectLinhas(char *tabela, char *campo, char *valor);
 /* "INSERT INTO Linha ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertLinha(char *nomeArq, char *registro);
 
+/* "CREATE INDEX ... Linhas" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
+int criaArvoreLinhas(char *arvore, char *tabela);
+
 
 int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha);
 int exibeLinhaOffset(char *tabela, int64_t offset);
