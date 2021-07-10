@@ -22,15 +22,16 @@ typedef struct {
 
 typedef struct {
     int64_t noRaiz,
-        numNos,
         proxNo;
     char *nomeArq;
 } ARVB_t;
 
-ARVB_t *criaArvB(char *nomeArquivo);
+ARVB_t *populaArvB(char *nomeArquivo);
 
 int adicionaRegistroArvB(ARVB_t *arvore,
                          int chave,
                          int offsetRegistro);
+
+int64_t pesquisaArvB(ARVB_t *arvore, int chave);
 
 #endif // __ARVOREB_H_

@@ -8,78 +8,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-/* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
-int criaArvoreVeiculos(char *tabela, char *arvore) {
-    FILE *arqTabela = fopen(tabela, "r"),
-        *arqSaida = fopen(arvore, "w+");
-    if (!arqTabela || !arqSaida ||
-        !arvore || !tabela)
-        return -1;
-
-    int32_t rnnRaiz = -1,
-        rnnProx = 0;
-
-    fputc('0', arqSaida);
-    fseek(arqSaida, 77, SEEK_SET);
-
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arqTabela);
-    if (status != '1') {
-        fclose(arqSaida);
-        fclose(arqTabela);
-        return 1;
-    }
-    fseek(arqTabela, sizeof(int64_t), SEEK_CUR);
-
-    int32_t nroRegs,
-        nroRems;
-    fread(&nroRegs, sizeof(int32_t), 1, arqTabela);
-    fread(&nroRems, sizeof(int32_t), 1, arqTabela);
-
-    if (nroRegs <= 0) {
-        fclose(arqSaida);
-        fclose(arqTabela);
-        return 1;
-    }
-
-    fseek(arqTabela, 174*sizeof(char), SEEK_SET);
-
-    ARVB_t *arv = criaArvB(arqSaida);
-    if (!arv) {
-        fclose(arqSaida);
-        fclose(arqTabela);
-        return 1;
-    }
-
-    for (int nReg = 0; nReg < (nroRegs + nroRems); ++nReg) {
-        long ponteiroAtual = ftell(arqTabela);
-        char removido; fread(&removido, sizeof(char), 1, arqTabela);
-        int32_t tamReg; fread(&tamReg, sizeof(int32_t), 1, arqTabela);
-        if (removido == '0') {
-            fseek(arqTabela, tamReg, SEEK_CUR);
-            continue;
-        }
-
-        int proxOffset = ftell(arqTabela) + tamReg;
-        char *prefixo = calloc(6, sizeof(char));
-        fread(prefixo, sizeof(char), 5, arqTabela);
-
-        adicionaRegistroArvB(arv,
-                             convertePrefixo(prefixo),
-                             ponteiroAtual);
-
-        fseek(arqTabela, proxOffset, SEEK_SET);
-    }
-
-    fseek(arqSaida, 1, SEEK_SET);
-    fwrite(&rnnRaiz, sizeof(int32_t), 1, arqSaida);
-    fwrite(&rnnProx, sizeof(int32_t), 1, arqSaida);
-    for (int i = 0; i < 68; ++i)
-        fputc('@', arqSaida);
-
-    return 0;
-}
-
 /* Adiciona veículo a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
     // Trata erro de ponteiros
@@ -527,3 +455,101 @@ int insertVeiculo(char *nomeArq, char *registro) {
     fclose(tabela);
     return 0;
 }
+
+int pesquisaVeiculoArvB(char *arqTabela, char *arqArvore, char *prefixo) {
+    if (!arqTabela || !arqArvore || !prefixo)
+        return -1;
+
+    char *valorTratado = trataAspas(prefixo, 100);
+    ARVB_t *arvore = populaArvB(arqArvore);
+    if (!arvore)
+        return 1;
+
+    int64_t offSetPesquisa = pesquisaArvB(arvore, convertePrefixo(valorTratado));
+    if (offSetPesquisa > 0)
+        exibeVeiculoOffset(arqTabela, offSetPesquisa);
+
+    free(arvore); free(valorTratado);
+
+    if (offSetPesquisa > 0)
+        return 0;
+    return 1;
+}
+
+int exibeVeiculoOffset(char *tabela, int64_t offset) {
+    FILE *arq = fopen(tabela, "rb");
+    if (!tabela || !arq)
+        return -1;
+
+    fseek(arq, offset, SEEK_SET);
+    VEICULO_t *tempVeiculo = leVeiculo(arq);
+    fseek(arq, 0, SEEK_SET);
+
+    // Lê e confere status do arquivo
+    char status; fread(&status, sizeof(char), 1, arq);
+    if (status != '1') {
+        fclose(arq);
+        return 1;
+    }
+    fseek(arq, sizeof(int64_t), SEEK_CUR);
+
+    // Lê contagem de registros
+    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
+    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
+    if (nroRegs == 0) {
+        fclose(arq);
+        return -1;
+    }
+
+    // Lê strings de cabeçalho
+    char *prefixo = calloc(19, sizeof(char)),
+        *data = calloc(36, sizeof(char)),
+        *lugares = calloc(43, sizeof(char)),
+        *linha = calloc(27, sizeof(char)),
+        *modelo = calloc(18, sizeof(char)),
+        *categoria = calloc(21, sizeof(char));
+    fread(prefixo, sizeof(char), 18, arq);
+    fread(data, sizeof(char), 35, arq);
+    fread(lugares, sizeof(char), 42, arq);
+    fread(linha, sizeof(char), 26, arq);
+    fread(modelo, sizeof(char), 17, arq);
+    fread(categoria, sizeof(char), 20, arq);
+
+    // Exibe informações no formato indicado
+    printf("%s: %s\n", prefixo, tempVeiculo->prefixo);
+
+    printf("%s: ", modelo);
+    if (tempVeiculo->modelo)
+        printf("%s\n", tempVeiculo->modelo);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", categoria);
+    if (tempVeiculo->categoria)
+        printf("%s\n", tempVeiculo->categoria);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", data);
+    if (tempVeiculo->data)
+        printf("%s\n", tempVeiculo->data);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", lugares);
+    if (tempVeiculo->quantidadeLugares != -1)
+        printf("%d\n", tempVeiculo->quantidadeLugares);
+    else
+        printf("campo com valor nulo\n");
+    printf("\n");
+
+    destroiVeiculo(tempVeiculo);
+    // Libera memória alocada
+    free(prefixo); free(data); free(lugares); free(linha); free(modelo); free(categoria);
+    fclose(arq);
+    return 0;
+}
+
+/* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
+/* int criaArvoreVeiculos(char *tabela, char *arvore) { */
+/* } */

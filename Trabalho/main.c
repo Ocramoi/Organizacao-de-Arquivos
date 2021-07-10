@@ -183,6 +183,42 @@ int main(int argc, char **argv) {
             /*     default: */
             /*         break; */
             /* } */
+            /* break; */
+        }
+        case 10: {
+            // Lê entrada
+            char arqEntrada[100],
+                 arqIndice[100];
+            sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqIndice);
+            // Processa possíveis saídas de erro
+            /* switch (selectLinhas(arqEntrada, nomeDoCampo, valor)) { */
+            /*     case -1: */
+            /*         printf("Registro inexistente.\n"); */
+            /*         break; */
+            /*     case 1: */
+            /*         printf("Falha no processamento do arquivo.\n"); */
+            /*         break; */
+            /*     default: */
+            /*         break; */
+            /* } */
+            /* break; */
+        }
+        case 11: {
+            // Lê entrada
+            char arqTabela[100],
+                arqArvore[100],
+                valor[100];
+            sscanf(entrada, "%d %s %s %s %s", &opcao, arqTabela, arqArvore, valor, valor);
+            switch (pesquisaVeiculoArvB(arqTabela, arqArvore, valor)) {
+                case -1:
+                    printf("Arquivo inexistente.\n");
+                    break;
+                case 1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                default:
+                    break;
+            }
             break;
         }
         default:

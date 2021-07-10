@@ -43,7 +43,7 @@ int escreveNoArvB(ARVB_t *arv,
     for (int i = 0; i < REGS_FOLHA; ++i) {
         fwrite(&(no->ponteirosNos[i]), sizeof(int32_t), 1, arq);
         fwrite(&(no->registros[i].chave), sizeof(int32_t), 1, arq);
-        fwrite(&(no->registros[i].ponteiroRegistro), sizeof(int32_t), 1, arq);
+        fwrite(&(no->registros[i].ponteiroRegistro), sizeof(int64_t), 1, arq);
     }
     fwrite(&(no->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arq);
 
@@ -89,7 +89,7 @@ NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn) {
     for (int i = 0; i < REGS_FOLHA; ++i) {
         fread(&(noTemp->ponteirosNos[i]), sizeof(int32_t), 1, arq);
         fread(&(noTemp->registros[i].chave), sizeof(int32_t), 1, arq);
-        fread(&(noTemp->registros[i].ponteiroRegistro), sizeof(int32_t), 1, arq);
+        fread(&(noTemp->registros[i].ponteiroRegistro), sizeof(int64_t), 1, arq);
     }
     fread(&(noTemp->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arq);
 
@@ -132,7 +132,6 @@ ARVB_t *criaArvB(char *arquivo) {
         return NULL;
 
     arv->noRaiz = 0;
-    arv->numNos = 1;
     arv->proxNo = 1;
     arv->nomeArq = arquivo;
 
@@ -196,7 +195,6 @@ int splitRnnArvB(ARVB_t *arv,
     noPai->registros[pos].ponteiroRegistro = noPai->registros[REGS_FOLHA/2].ponteiroRegistro;
 
     noPai->nroChavesIndexadas++;
-    arv->numNos++;
 
     int retornoErro = (escreveCabecalhoArvB(arv, NULL) ||
                        escreveNoArvB(arv, noFilho, (noFilho->rrnNo == arv->noRaiz)) ||
@@ -221,7 +219,6 @@ int adicionaRegistroRRNArvB(ARVB_t *arv,
         if (tempNo->ponteirosNos[pos] == -1) {
             tempNo->ponteirosNos[pos] = arv->proxNo;
             arv->proxNo++;
-            arv->numNos++;
             escreveCabecalhoArvB(arv, NULL);
             escreveNoArvB(arv, tempNo, 0);
         }
@@ -278,4 +275,75 @@ int adicionaRegistroArvB(ARVB_t *arvore,
                             chave,
                             offsetRegistro);
     return 0;
+}
+
+ARVB_t *populaArvB(char *nomeArquivo) {
+    FILE *arquivo = fopen(nomeArquivo, "rb");
+    if (!arquivo)
+        return NULL;
+
+    char status;
+    fread(&status, sizeof(char), 1, arquivo);
+    if (status != '1') {
+        fclose(arquivo);
+        return NULL;
+    }
+
+    ARVB_t *arvore = malloc(sizeof(ARVB_t));
+    arvore->nomeArq = nomeArquivo;
+    fread(&(arvore->noRaiz), sizeof(int32_t), 1, arquivo);
+    fread(&(arvore->proxNo), sizeof(int32_t), 1, arquivo);
+    fseek(arquivo, 68, SEEK_CUR);
+
+    fclose(arquivo);
+    return arvore;
+}
+
+int64_t pesquisaRRNArvB(FILE *arqArvore,
+                        int rrn,
+                        int chave) {
+    if (rrn == -1)
+        return -1;
+
+    fseek(arqArvore, 77*(rrn + 1), SEEK_SET);
+
+    NO_ARVB_t *tempNo = criaNoArvB();
+    fread(&(tempNo->folha), sizeof(char), 1, arqArvore);
+    fread(&(tempNo->nroChavesIndexadas), sizeof(int32_t), 1, arqArvore);
+    fread(&(tempNo->rrnNo), sizeof(int32_t), 1, arqArvore);
+
+    for (int i = 0; i < REGS_FOLHA; ++i) {
+        fread(&(tempNo->ponteirosNos[i]), sizeof(int32_t), 1, arqArvore);
+        fread(&(tempNo->registros[i].chave), sizeof(int32_t), 1, arqArvore);
+        fread(&(tempNo->registros[i].ponteiroRegistro), sizeof(int64_t), 1, arqArvore);
+    }
+
+    fread(&(tempNo->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arqArvore);
+
+    int pos;
+    for (pos = 0; pos < tempNo->nroChavesIndexadas; ++pos) {
+        if (tempNo->registros[pos].chave > chave) {
+            break;
+        }
+        if (tempNo->registros[pos].chave == chave) {
+            int64_t offset = tempNo->registros[pos].ponteiroRegistro;
+            free(tempNo);
+            return offset;
+        }
+    }
+
+    int rrnPesq = tempNo->ponteirosNos[pos];
+    free(tempNo);
+    return pesquisaRRNArvB(arqArvore, rrnPesq, chave);
+}
+
+int64_t pesquisaArvB(ARVB_t *arvore, int chave) {
+    if (!arvore)
+        return -1;
+
+    FILE *arq = fopen(arvore->nomeArq, "rb");
+    int64_t offsetReg = pesquisaRRNArvB(arq, arvore->noRaiz, chave);
+    fclose(arq);
+
+    return offsetReg;
 }
