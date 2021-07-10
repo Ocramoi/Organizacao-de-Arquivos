@@ -27,4 +27,8 @@ int selectLinhas(char *tabela, char *campo, char *valor);
 /* "INSERT INTO Linha ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertLinha(char *nomeArq, char *registro);
 
+
+int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha);
+int exibeLinhaOffset(char *tabela, int64_t offset);
+
 #endif // __LINHAS_H_

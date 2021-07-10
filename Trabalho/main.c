@@ -216,6 +216,32 @@ int main(int argc, char **argv) {
                 case 1:
                     printf("Falha no processamento do arquivo.\n");
                     break;
+                case 2:
+                    printf("Registro inexistente.\n");
+                    break;
+                default:
+                    break;
+            }
+            break;
+        }
+        case 12: {
+            // Lê entrada
+            char arqTabela[100],
+                arqArvore[100],
+                campo[100],
+                valor[100];
+            int codLinha;
+            sscanf(entrada, "%d %s %s %s %d", &opcao, arqTabela, arqArvore, campo, &codLinha);
+            switch (pesquisaLinhaArvB(arqTabela, arqArvore, codLinha)) {
+                case -1:
+                    printf("Arquivo inexistente.\n");
+                    break;
+                case 1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                case 2:
+                    printf("Registro inexistente.\n");
+                    break;
                 default:
                     break;
             }

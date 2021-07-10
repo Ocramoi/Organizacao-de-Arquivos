@@ -473,7 +473,7 @@ int pesquisaVeiculoArvB(char *arqTabela, char *arqArvore, char *prefixo) {
 
     if (offSetPesquisa > 0)
         return 0;
-    return 1;
+    return 2;
 }
 
 int exibeVeiculoOffset(char *tabela, int64_t offset) {

@@ -1,6 +1,7 @@
 #include "Linhas.h"
 #include "LeLinha.h"
 #include "TratamentoDeValores.h"
+#include "ArvoreB.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -418,5 +419,98 @@ int insertLinha(char *nomeArq, char *registro) {
 
     // Fecha o arquivo
     fclose(tabela);
+    return 0;
+}
+
+int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha) {
+    if (!arqTabela || !arqArvore || codLinha < 0)
+        return -1;
+
+    ARVB_t *arvore = populaArvB(arqArvore);
+    if (!arvore)
+        return 1;
+
+    int64_t offSetPesquisa = pesquisaArvB(arvore, codLinha);
+    if (offSetPesquisa > 0)
+        exibeLinhaOffset(arqTabela, offSetPesquisa);
+
+    free(arvore);
+
+    if (offSetPesquisa > 0)
+        return 0;
+    return 2;
+}
+
+int exibeLinhaOffset(char *tabela, int64_t offset) {
+    FILE *arq = fopen(tabela, "rb");
+    if (!tabela || !arq)
+        return -1;
+
+    fseek(arq, offset, SEEK_SET);
+    LINHA_t *tempLinha = leObjLinha(arq);
+    fseek(arq, 0, SEEK_SET);
+
+    // Lê e confere status do arquivo
+    char status; fread(&status, sizeof(char), 1, arq);
+    if (status != '1') {
+        fclose(arq);
+        return 1;
+    }
+    fseek(arq, sizeof(int64_t), SEEK_CUR);
+
+    // Lê contagem de registros
+    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
+    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
+    if (nroRegs == 0) {
+        fclose(arq);
+        return -1;
+    }
+
+    // Lê strings de cabeçalho
+    char *descreveCodigo = calloc(16, sizeof(char)),
+        *descreveCartao = calloc(14, sizeof(char)),
+        *descreveNome = calloc(14, sizeof(char)),
+        *descreveLinha = calloc(25, sizeof(char));
+    fread(descreveCodigo, sizeof(char), 15, arq);
+    fread(descreveCartao, sizeof(char), 13, arq);
+    fread(descreveNome, sizeof(char), 13, arq);
+    fread(descreveLinha, sizeof(char), 24, arq);
+
+    // Exibe informações no formato indicado
+    printf("%s: %d\n", descreveCodigo, tempLinha->codLinha);
+
+    printf("%s: ", descreveNome);
+    if (tempLinha->nomeLinha)
+        printf("%s\n", tempLinha->nomeLinha);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", descreveLinha);
+    if (tempLinha->corLinha)
+        printf("%s\n", tempLinha->corLinha);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", descreveCartao);
+    switch (tempLinha->cartao) {
+        case 'S':
+            printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
+            break;
+        case 'N':
+            printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
+            break;
+        case 'F':
+            printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
+            break;
+    }
+    printf("\n");
+
+    // Libera memória alocada
+    free(descreveCodigo); free(descreveCartao); free(descreveNome); free(descreveLinha);
+    // Fecha arquivo da tabela
+    fclose(arq);
+    // Libera registro criado anteriormente
+    destroiLinha(tempLinha);
+
     return 0;
 }
