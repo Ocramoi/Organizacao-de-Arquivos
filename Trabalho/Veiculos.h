@@ -31,6 +31,7 @@ int insertVeiculo(char *nomeArq, char *registro);
 int criaArvoreVeiculos(char *arvore, char *tabela);
 
 
+int adicionaRegistroArvore(char *arvore, char *registro);
 int pesquisaVeiculoArvB(char *arqTabela, char *arqArvore, char *prefixo);
 int exibeVeiculoOffset(char *tabela, int64_t offset);
 

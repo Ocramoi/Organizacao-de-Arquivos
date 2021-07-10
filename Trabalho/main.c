@@ -233,6 +233,28 @@ int main(int argc, char **argv) {
             }
             break;
         }
+        case 13: {
+            // Lê entrada
+            char arqTabela[100],
+                arqArvore[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %s %d", &opcao, arqTabela, arqArvore, &num);
+            // Insere registros linha a linha
+            for (int i = 0; i < num; ++i) {
+                char *registro = leLinha(stdin);
+                ret = insertVeiculo(arqTabela, registro);
+                free(registro);
+                if (ret)
+                    break;
+            }
+            // Trata retorno
+            if (ret)
+                printf("Falha no processamento do arquivo.\n");
+            else
+                FF_binarioNaTela(arqTabela);
+            break;
+        }
         default:
             printf("Opção digitada inválida!\n");
             break;

@@ -347,6 +347,10 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     return 0;
 }
 
+VEICULO_t *regParaObj(char *registro) {
+    return NULL;
+}
+
 /* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertVeiculo(char *nomeArq, char *registro) {
     // Confere ponteiros passados
@@ -592,3 +596,5 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     fclose(arqTabela);
     return 0;
 }
+
+int adicionaRegistroArvore(char *arvore, char *registro) {}
