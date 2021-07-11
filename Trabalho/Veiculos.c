@@ -348,32 +348,9 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
 }
 
 VEICULO_t *regParaObj(char *registro) {
-    return NULL;
-}
-
-/* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
-int insertVeiculo(char *nomeArq, char *registro) {
-    // Confere ponteiros passados
-    FILE *tabela = fopen(nomeArq, "r+b");
-    if (!tabela || !registro || !tabela)
-        return 1;
-
-    // Checa o status do arquivo [nomeArq] para o [registro] ser escrito 
-    char status; fread(&status, sizeof(char), 1, tabela);
-    if (status != '1') {
-        fclose(tabela);
-        return 1;
-    }
-
-    // Altera o status do arquivo para em uso [0] 
-    fseek(tabela, 0, SEEK_SET);
-    fwrite("0", sizeof(char), 1, tabela);
-    // Busca os campos armazenados no cabeçalho do arquivo [nomeArq] byte offset [offset] e numeros de registros [numReg]
-    int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
-    int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
-
-    // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
-    fseek(tabela, 0, SEEK_END);
+    VEICULO_t *veiculo = malloc(sizeof(VEICULO_t));
+    if (!veiculo)
+        return NULL;
 
     // Variáveis de armazenamento dos dados de [registro]
     char tempPrefixo[10],
@@ -383,14 +360,14 @@ int insertVeiculo(char *nomeArq, char *registro) {
         tempQuantLugar[50],
         tempCodLinha[50],
         resto[150];
-   
+
     // Leitura dos dados de [registro] e alocação
     sscanf(registro, "\"%[^\"]\" %s %s %s %[^\n]", tempPrefixo, tempData, tempQuantLugar, tempCodLinha, resto);
     if (resto[0] == '"')
         sscanf(resto, "\"%[^\"]\" %s", tempModelo, tempCategoria);
     else
         sscanf(resto, "%s %s", tempModelo, tempCategoria);
-    
+
     // Trata os dados de [registro] inseridos
     char *prefixo = trataAspas(tempPrefixo, 10),
         *data = trataAspas(tempData, 25),
@@ -423,23 +400,61 @@ int insertVeiculo(char *nomeArq, char *registro) {
     else
         codLinha = atoi(tempCodLinha);
 
+    veiculo->removido = '1';
+    memcpy(veiculo->prefixo, prefixo, 6);
+    veiculo->data = data;
+    veiculo->quantidadeLugares = quantLugares;
+    veiculo->codLinha = codLinha;
+    veiculo->modelo = modelo;
+    veiculo->categoria = categoria;
+    free(prefixo);
+
+    return veiculo;
+}
+
+/* "INSERT INTO Veiculos ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
+int insertVeiculo(char *nomeArq, char *registro) {
+    // Confere ponteiros passados
+    FILE *tabela = fopen(nomeArq, "r+b");
+    if (!tabela || !registro || !tabela)
+        return 1;
+
+    // Checa o status do arquivo [nomeArq] para o [registro] ser escrito 
+    char status; fread(&status, sizeof(char), 1, tabela);
+    if (status != '1') {
+        fclose(tabela);
+        return 1;
+    }
+
+    // Altera o status do arquivo para em uso [0] 
+    fseek(tabela, 0, SEEK_SET);
+    fwrite("0", sizeof(char), 1, tabela);
+    // Busca os campos armazenados no cabeçalho do arquivo [nomeArq] byte offset [offset] e numeros de registros [numReg]
+    int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
+    int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
+
+    VEICULO_t *tempVeiculo = regParaObj(registro);
+
+    // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
+    fseek(tabela, 0, SEEK_END);
+
     // Escrita dos dados de [registro] no arquivo [nomeArq] já posicionado no final [offset]
     fwrite("1", sizeof(char), 1, tabela);
-    int32_t tamModelo = strlen(modelo),
-        tamCategoria = strlen(categoria),
+    int32_t tamModelo = strlen(tempVeiculo->modelo),
+        tamCategoria = strlen(tempVeiculo->categoria),
         tam = 31 + tamModelo + tamCategoria;
     fwrite(&tam, sizeof(int32_t), 1, tabela);
-    fwrite(prefixo, sizeof(char), 5, tabela);
-    if (strlen(data))
-        fwrite(data, sizeof(char), 10, tabela);
+    fwrite(tempVeiculo->prefixo, sizeof(char), 5, tabela);
+    if (strlen(tempVeiculo->data))
+        fwrite(tempVeiculo->data, sizeof(char), 10, tabela);
     else
         fwrite("\0@@@@@@@@@", sizeof(char), 10, tabela);
-    fwrite(&quantLugares, sizeof(int32_t), 1, tabela);
-    fwrite(&codLinha, sizeof(int32_t), 1, tabela);
+    fwrite(&(tempVeiculo->quantidadeLugares), sizeof(int32_t), 1, tabela);
+    fwrite(&(tempVeiculo->codLinha), sizeof(int32_t), 1, tabela);
     fwrite(&tamModelo, sizeof(int32_t), 1, tabela);
-    fwrite(modelo, sizeof(char), tamModelo, tabela);
+    fwrite(tempVeiculo->modelo, sizeof(char), tamModelo, tabela);
     fwrite(&tamCategoria, sizeof(int32_t), 1, tabela);
-    fwrite(categoria, sizeof(char), tamCategoria, tabela);
+    fwrite(tempVeiculo->categoria, sizeof(char), tamCategoria, tabela);
 
     // Atualização do número de registros [numReg], byte offset [offset]
     int64_t proxReg = offset + tam + 5;
@@ -453,7 +468,7 @@ int insertVeiculo(char *nomeArq, char *registro) {
     fwrite("1", sizeof(char), 1, tabela);
 
     // Libera memória alocada
-    free(prefixo); free(data); free(modelo); free(categoria);
+    destroiVeiculo(tempVeiculo);
 
     // Fecha o arquivo
     fclose(tabela);
@@ -597,4 +612,22 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     return 0;
 }
 
-int adicionaRegistroArvore(char *arvore, char *registro) {}
+int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInsercao, char* arqTabela) {
+    ARVB_t *arvore = populaArvB(arqArvore);
+    if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
+        return 1;
+
+    VEICULO_t *tempVeiculo = regParaObj(registro);
+    if (!tempVeiculo)
+        return 1;
+    int ret = adicionaRegistroArvB(arvore, convertePrefixo(tempVeiculo->prefixo), offsetInsercao);
+
+    printf(":::::: %s ", tempVeiculo->prefixo);
+    printf("%d\n", ret);
+    int temp = pesquisaVeiculoArvB(arqTabela, arqArvore, tempVeiculo->prefixo);
+    printf("---> %d\n\n", temp);
+    free(arvore);
+    destroiVeiculo(tempVeiculo);
+
+    return ret;
+}

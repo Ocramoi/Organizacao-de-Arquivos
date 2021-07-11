@@ -3,37 +3,31 @@
 
 // Definições
 int escreveNoArvB(ARVB_t *arv,
-                  NO_ARVB_t *no,
-                  char raiz);
+                  NO_ARVB_t *no);
 NO_ARVB_t* criaNoArvB();
 NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn);
-/* int adicionaRegistroRRNArvB(ARVB_t *arv, */
-/*                             int rrn, */
-/*                             int chave, */
-/*                             int offsetRegistro); */
-int escreveCabecalhoArvB(ARVB_t *arvore,
-                         FILE *arqArvore);
+int escreveCabecalhoArvB(ARVB_t *arvore);
 
 // Implementação
 int escreveNoArvB(ARVB_t *arv,
-                  NO_ARVB_t *no,
-                  char raiz) {
-    if (!arv || !arv->nomeArq)
+                  NO_ARVB_t *no) {
+    if (!arv || !arv->nomeArq || !no || no->rrnNo < 0)
         return 1;
 
     FILE *arq = fopen(arv->nomeArq, "r+b");
+    if (!arq)
+        return 1;
     char statusArq; fread(&statusArq, sizeof(char), 1, arq);
     if (statusArq == '0') {
         fclose(arq);
         return 1;
     }
     int32_t noRaiz; fread(&noRaiz, sizeof(int32_t), 1, arq);
-    int32_t rrnProxNo; fread(&rrnProxNo, sizeof(int32_t), 1, arq);
-    rrnProxNo++;
 
-    fseek(arq, 0, SEEK_SET);
-    fwrite("0", sizeof(char), 1, arq);
+    /* fseek(arq, 0, SEEK_SET); */
+    /* fwrite("0", sizeof(char), 1, arq); */
 
+    printf(":::::: %d\n\n", no->rrnNo);
     fseek(arq, TAM_PAGINA*(no->rrnNo + 1), SEEK_SET);
 
     fwrite(&(no->folha), sizeof(char), 1, arq);
@@ -47,13 +41,9 @@ int escreveNoArvB(ARVB_t *arv,
     }
     fwrite(&(no->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arq);
 
-    fseek(arq, 0, SEEK_SET);
-    fwrite("1", sizeof(char), 1, arq);
-    if (raiz)
-        fwrite(&(no->rrnNo), sizeof(int32_t), 1, arq);
-    else
-        fwrite(&noRaiz, sizeof(int32_t), 1, arq);
-    fwrite(&rrnProxNo, sizeof(int32_t), 1, arq);
+    /* fseek(arq, 0, SEEK_SET); */
+    /* rewind(arq); */
+    /* fwrite("1", sizeof(char), 1, arq); */
     fclose(arq);
 
     return 0;
@@ -97,29 +87,20 @@ NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn) {
     return noTemp;
 }
 
-int escreveCabecalhoArvB(ARVB_t *arvore,
-                         FILE *arqArvore) {
+int escreveCabecalhoArvB(ARVB_t *arvore) {
     if (!arvore || !arvore->nomeArq)
         return 1;
 
-    FILE *arq = arqArvore;
-    if (!arq)
-        arq = fopen(arvore->nomeArq, "r+b");
+    FILE *arq = fopen(arvore->nomeArq, "r+b");
 
-    long initOffset = ftell(arqArvore);
-
-    fseek(arqArvore, 0, SEEK_SET);
+    fseek(arq, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, arq);
     fwrite(&(arvore->noRaiz), sizeof(int32_t), 1, arq);
     fwrite(&(arvore->proxNo), sizeof(int32_t), 1, arq);
     for (int i = 0; i < 68; ++i)
         fwrite("@", sizeof(char), 1, arq);
 
-    if (arqArvore)
-        fseek(arqArvore, initOffset, SEEK_SET);
-    else
-        fclose(arq);
-
+    fclose(arq);
     return 0;
 }
 
@@ -146,135 +127,138 @@ ARVB_t *criaArvB(char *arquivo) {
     NO_ARVB_t *tempNo = criaNoArvB();
     tempNo->folha = '1';
     tempNo->rrnNo = 0;
-    escreveNoArvB(arv, tempNo, 1);
+    escreveNoArvB(arv, tempNo);
     free(tempNo);
 
     return arv;
 }
 
-int splitRnnArvB(ARVB_t *arv,
+int splitRrnArvB(ARVB_t *arv,
                  int rrn,
-                 int chave,
-                 int offsetRegistro) {
-    NO_ARVB_t *noPai = leNoArvB(arv, rrn),
-        *tempNo = criaNoArvB();
-    if (!noPai || !tempNo)
-        return 1;
-    tempNo->rrnNo = arv->proxNo;
+                 int ith) {
+    int t = REGS_FOLHA/2;
+    NO_ARVB_t *noX = leNoArvB(arv, rrn),
+        *noZ = criaNoArvB(),
+        *noY = leNoArvB(arv, noX->ponteirosNos[ith]);
+    noZ->rrnNo = arv->proxNo;
     arv->proxNo++;
 
-    int pos;
-    for (pos = 0; pos < tempNo->nroChavesIndexadas; ++pos)
-        if (tempNo->registros[pos].chave > chave)
-            break;
-    NO_ARVB_t *noFilho = leNoArvB(arv, tempNo->ponteirosNos[pos]);
-    if (!noFilho)
-        return 1;
+    noZ->folha = noY->folha;
+    noZ->nroChavesIndexadas = t - 1;
 
-    tempNo->folha = noFilho->folha;
-    tempNo->nroChavesIndexadas = REGS_FOLHA/2;
-    for (int i = 0; i < REGS_FOLHA/2; ++i) {
-        tempNo->registros[i].chave = noFilho->registros[(REGS_FOLHA/2) + i].chave;
-        tempNo->registros[i].ponteiroRegistro = noFilho->registros[(REGS_FOLHA/2) + i].ponteiroRegistro;
+    for (int j = 0; j < t - 1; ++j) {
+        noZ->registros[j].chave = noY->registros[j + t].chave;
+        noZ->registros[j].ponteiroRegistro = noY->registros[j + t].ponteiroRegistro;
     }
 
-    if (noFilho->folha != '1')
-        for (int i = 0; i < (REGS_FOLHA/2) + 1; ++i)
-            tempNo->ponteirosNos[i] = noFilho->ponteirosNos[i + (REGS_FOLHA/2) + 1];
-
-    noFilho->nroChavesIndexadas = REGS_FOLHA/2;
-    for (int  i = noPai->nroChavesIndexadas + 1; i >= pos + 1; --i)
-        noPai->ponteirosNos[i + 1] = noPai->ponteirosNos[i];
-
-    noPai->ponteirosNos[pos + 1] = tempNo->rrnNo;
-    for (int i = noPai->nroChavesIndexadas; i >= pos; --i) {
-        noPai->registros[i + 1].chave = noPai->registros[i].chave;
-        noPai->registros[i + 1].ponteiroRegistro = noPai->registros[i].ponteiroRegistro;
+    if (noY->folha != '1') {
+        for (int j = 0; j < t; ++j)
+            noZ->ponteirosNos[j] = noY->ponteirosNos[j + t];
     }
-    noPai->registros[pos].chave = noPai->registros[REGS_FOLHA/2].chave;
-    noPai->registros[pos].ponteiroRegistro = noPai->registros[REGS_FOLHA/2].ponteiroRegistro;
 
-    noPai->nroChavesIndexadas++;
+    noY->nroChavesIndexadas = t - 1;
+    for (int j = noX->nroChavesIndexadas + 1; j >= ith + 1; --j)
+        noX->ponteirosNos[j + 1] = noX->ponteirosNos[j];
+    noX->ponteirosNos[ith + 1] = noZ->rrnNo;
 
-    int retornoErro = (escreveCabecalhoArvB(arv, NULL) ||
-                       escreveNoArvB(arv, noFilho, (noFilho->rrnNo == arv->noRaiz)) ||
-                       escreveNoArvB(arv, tempNo, (tempNo->rrnNo == arv->noRaiz)) ||
-                       escreveNoArvB(arv, noPai, (noPai->rrnNo == arv->noRaiz)));
-    free(noFilho); free(noPai); free(tempNo);
-    return retornoErro;
+    for (int j = noX->nroChavesIndexadas - 1; j <= ith; --j) {
+        noX->registros[j + 1].chave = noX->registros[j].chave;
+        noX->registros[j + 1].ponteiroRegistro = noX->registros[j].ponteiroRegistro;
+    }
+
+    noX->registros[ith].chave = noY->registros[t].chave;
+    noX->registros[ith].ponteiroRegistro = noY->registros[t].ponteiroRegistro;
+    noX->nroChavesIndexadas++;
+
+    int retorno = 0;
+    retorno ^= escreveCabecalhoArvB(arv);
+    retorno ^= escreveNoArvB(arv, noY);
+    retorno ^= escreveNoArvB(arv, noZ);
+    retorno ^= escreveNoArvB(arv, noX);
+
+    free(arv); free(noX); free(noY); free(noZ);
+    return retorno;
 }
 
-int adicionaRegistroRRNArvB(ARVB_t *arv,
-                            int rrn,
-                            int chave,
-                            int offsetRegistro) {
+int adicionaRegistroRRNDisponivelArvB(ARVB_t *arv,
+                                      int rrn,
+                                      int chave,
+                                      int offsetRegistro) {
+    int ret = 1;
     NO_ARVB_t *tempNo = leNoArvB(arv, rrn);
-
-    if (tempNo->folha != '1') {
-        int pos;
-        for (pos = 0; pos < tempNo->nroChavesIndexadas; ++pos)
-            if (tempNo->registros[pos].chave > chave)
-                break;
-
-        if (tempNo->ponteirosNos[pos] == -1) {
-            tempNo->ponteirosNos[pos] = arv->proxNo;
-            arv->proxNo++;
-            escreveCabecalhoArvB(arv, NULL);
-            escreveNoArvB(arv, tempNo, 0);
-        }
-
-        int prox = tempNo->ponteirosNos[pos];
-        free(tempNo);
-
-        int retorno = adicionaRegistroRRNArvB(arv, prox, chave, offsetRegistro);
-        if (retorno == -1)
-            retorno = splitRnnArvB(arv, rrn, chave, offsetRegistro);
-        return retorno;
-    }
-
-    if (tempNo->nroChavesIndexadas < REGS_FOLHA) {
-        int pos;
-        for (pos = 0; pos < tempNo->nroChavesIndexadas; ++pos)
-            if (tempNo->registros[pos].chave > chave)
-                break;
-
-        CONJUNTO_CHAVE_PONTEIRO_t registros[REGS_FOLHA];
-        memcpy(registros, tempNo->registros, REGS_FOLHA*sizeof(CONJUNTO_CHAVE_PONTEIRO_t));
-        for (int i = 0; i < pos; ++i) {
-            tempNo->registros[i].chave = registros[i].chave;
-            tempNo->registros[i].ponteiroRegistro = registros[i].ponteiroRegistro;
-        }
-
-        tempNo->registros[pos].chave = chave;
-        tempNo->registros[pos].ponteiroRegistro = offsetRegistro;
-
-        for (int i = pos + 1; i < REGS_FOLHA; ++i) {
-            tempNo->registros[i].chave = registros[i].chave;
-            tempNo->registros[i].ponteiroRegistro = registros[i].ponteiroRegistro;
-        }
-
-        int ret = 0;
-        if (escreveNoArvB(arv, tempNo, (tempNo->rrnNo == arv->noRaiz)))
-            ret = 1;
-
-        free(tempNo);
+    if (!tempNo)
         return ret;
-    }
+    int i = tempNo->nroChavesIndexadas - 1;
 
-    return -1;
+    if (tempNo->folha == '1') {
+        while (i >= 0 && chave < tempNo->registros[i].chave) {
+            tempNo->registros[i + 1].chave = tempNo->registros[i].chave;
+            tempNo->registros[i + 1].ponteiroRegistro = tempNo->registros[i].ponteiroRegistro;
+            i--;
+        }
+        tempNo->registros[i + 1].chave = chave;
+        tempNo->registros[i + 1].ponteiroRegistro = offsetRegistro;
+        tempNo->nroChavesIndexadas++;
+
+        if (escreveNoArvB(arv, tempNo))
+            ret = 1;
+        else
+            ret = 0;
+    } else {
+        while (i >= 0 && chave < tempNo->registros[i].chave)
+            --i;
+        i++;
+
+        NO_ARVB_t *noInsercao = leNoArvB(arv, tempNo->ponteirosNos[i]);
+        if (noInsercao->nroChavesIndexadas == REGS_FOLHA) {
+            free(tempNo); free(noInsercao);
+            splitRrnArvB(arv, rrn, i);
+            tempNo = leNoArvB(arv, rrn); noInsercao = leNoArvB(arv, tempNo->ponteirosNos[i]);
+            if (chave > tempNo->registros[i].chave)
+                i++;
+            free(noInsercao);
+        }
+        ret = adicionaRegistroRRNDisponivelArvB(arv, tempNo->ponteirosNos[i], chave, offsetRegistro);
+    }
+    free(tempNo);
+    return ret;
 }
 
 int adicionaRegistroArvB(ARVB_t *arvore,
                          int chave,
                          int offsetRegistro) {
-    if (!arvore)
+    if (!arvore || !arvore->nomeArq)
         return 1;
 
-    adicionaRegistroRRNArvB(arvore,
-                            arvore->noRaiz,
-                            chave,
-                            offsetRegistro);
-    return 0;
+    /* if (pesquisaArvB(arvore, chave) >= 0) */
+    /*     return 1; */
+
+    int retorno;
+    NO_ARVB_t *root = leNoArvB(arvore, arvore->noRaiz);
+    if (root->nroChavesIndexadas == REGS_FOLHA) {
+        NO_ARVB_t *noInsercao = criaNoArvB();
+        noInsercao->rrnNo = arvore->proxNo;
+        arvore->proxNo++;
+
+        noInsercao->folha = '0';
+        noInsercao->nroChavesIndexadas = 0;
+        noInsercao->ponteirosNos[0] = arvore->noRaiz;
+        arvore->noRaiz = noInsercao->rrnNo;
+        escreveNoArvB(arvore, noInsercao);
+
+        escreveCabecalhoArvB(arvore);
+
+        free(noInsercao);
+        splitRrnArvB(arvore, arvore->noRaiz, 0);
+        retorno = adicionaRegistroRRNDisponivelArvB(arvore, arvore->noRaiz, chave, offsetRegistro);
+    } else
+        retorno = adicionaRegistroRRNDisponivelArvB(arvore,
+                                                    arvore->noRaiz,
+                                                    chave,
+                                                    offsetRegistro);
+
+    free(root);
+    return retorno;
 }
 
 ARVB_t *populaArvB(char *nomeArquivo) {
@@ -293,7 +277,6 @@ ARVB_t *populaArvB(char *nomeArquivo) {
     arvore->nomeArq = nomeArquivo;
     fread(&(arvore->noRaiz), sizeof(int32_t), 1, arquivo);
     fread(&(arvore->proxNo), sizeof(int32_t), 1, arquivo);
-    fseek(arquivo, 68, SEEK_CUR);
 
     fclose(arquivo);
     return arvore;
@@ -317,14 +300,12 @@ int64_t pesquisaRRNArvB(FILE *arqArvore,
         fread(&(tempNo->registros[i].chave), sizeof(int32_t), 1, arqArvore);
         fread(&(tempNo->registros[i].ponteiroRegistro), sizeof(int64_t), 1, arqArvore);
     }
-
     fread(&(tempNo->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arqArvore);
 
     int pos;
     for (pos = 0; pos < tempNo->nroChavesIndexadas; ++pos) {
-        if (tempNo->registros[pos].chave > chave) {
+        if (tempNo->registros[pos].chave > chave)
             break;
-        }
         if (tempNo->registros[pos].chave == chave) {
             int64_t offset = tempNo->registros[pos].ponteiroRegistro;
             free(tempNo);

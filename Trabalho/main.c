@@ -243,16 +243,23 @@ int main(int argc, char **argv) {
             // Insere registros linha a linha
             for (int i = 0; i < num; ++i) {
                 char *registro = leLinha(stdin);
+
+                FILE *arq = fopen(arqTabela, "rb");
+                fseek(arq, 0, SEEK_END);
+                int64_t offsetIsercao = ftell(arq);
+                fclose(arq);
+
                 ret = insertVeiculo(arqTabela, registro);
-                free(registro);
                 if (ret)
                     break;
+                adicionaVeiculoArvore(arqArvore, registro, offsetIsercao, arqTabela);
+                free(registro);
             }
             // Trata retorno
             if (ret)
                 printf("Falha no processamento do arquivo.\n");
             else
-                FF_binarioNaTela(arqTabela);
+                FF_binarioNaTela(arqArvore);
             break;
         }
         default:
