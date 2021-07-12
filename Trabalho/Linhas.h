@@ -31,6 +31,7 @@ int insertLinha(char *nomeArq, char *registro);
 int criaArvoreLinhas(char *arvore, char *tabela);
 
 
+int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao);
 int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha);
 int exibeLinhaOffset(char *tabela, int64_t offset);
 

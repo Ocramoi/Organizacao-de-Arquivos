@@ -317,6 +317,69 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     return 0;
 }
 
+LINHA_t *regParaLinha(char *registro) {
+    if (!registro)
+        return NULL;
+
+    LINHA_t *tempLinha = malloc(sizeof(LINHA_t));
+    if (!tempLinha)
+        return NULL;
+
+    // Variáveis de armazenamento dos dados de [registro]
+    char tempCodLinha[10],
+        tempAceitaCartao[10],
+        tempNomeLinha[100],
+        tempCorLinha[100],
+        resto[250];
+
+    // Leitura dos dados de [registro] e alocação
+    sscanf(registro, "%s %[^\n]", tempCodLinha, resto);
+    if (resto[0] == '"')
+        sscanf(resto, "\"%[^\"]\" %[^\n]", tempAceitaCartao, resto);
+    else
+        sscanf(resto, "%s %[^\n]", tempAceitaCartao, resto);
+    if (resto[0] == '"')
+        sscanf(resto, "\"%[^\"]\" %[^\n]", tempNomeLinha, tempCorLinha);
+    else
+        sscanf(resto, "%s %[^\n]", tempNomeLinha, tempCorLinha);
+
+    // Trata os dados de [registro] inseridos
+    char *aceitaCartao = trataAspas(tempAceitaCartao, 10),
+        *nomeLinha = trataAspas(tempNomeLinha, 100),
+        *corLinha = trataAspas(tempCorLinha, 100);
+
+    if (tempCodLinha[0] == '*') {
+        memmove(tempCodLinha, tempCodLinha + 1, strlen(tempCodLinha));
+        tempLinha->removido = '0';
+    }
+    else
+        tempLinha->removido = '1';
+
+    int32_t codLinha = atoi(tempCodLinha);
+
+    if (!strcmp(aceitaCartao, "NULO")) {
+        aceitaCartao = realloc(aceitaCartao, 1);
+        aceitaCartao[0] = '\0';
+    }
+
+    if (!strcmp(nomeLinha, "NULO")) {
+        nomeLinha = realloc(nomeLinha, 1);
+        nomeLinha[0] = '\0';
+    }
+
+    if (!strcmp(corLinha, "NULO")) {
+        corLinha = realloc(corLinha, 1);
+        corLinha[0] = '\0';
+    }
+
+    tempLinha->cartao = aceitaCartao[0];
+    tempLinha->codLinha = codLinha;
+    tempLinha->corLinha = corLinha;
+    tempLinha->nomeLinha = nomeLinha;
+
+    return tempLinha;
+}
+
 /* "INSERT INTO Linha ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertLinha(char *nomeArq, char *registro) {
     // Confere ponteiros passados
@@ -342,66 +405,25 @@ int insertLinha(char *nomeArq, char *registro) {
     // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
     fseek(tabela, 0, SEEK_END);
 
-    // Variáveis de armazenamento dos dados de [registro]
-    char tempCodLinha[10],
-        tempAceitaCartao[10],
-        tempNomeLinha[100],
-        tempCorLinha[100],
-        resto[250];
-   
-    // Leitura dos dados de [registro] e alocação
-    sscanf(registro, "%s %[^\n]", tempCodLinha, resto);
-    if (resto[0] == '"')
-        sscanf(resto, "\"%[^\"]\" %[^\n]", tempAceitaCartao, resto);
-    else
-        sscanf(resto, "%s %[^\n]", tempAceitaCartao, resto);
-    if (resto[0] == '"')
-        sscanf(resto, "\"%[^\"]\" %[^\n]", tempNomeLinha, tempCorLinha);
-    else
-        sscanf(resto, "%s %[^\n]", tempNomeLinha, tempCorLinha);
-    
-    // Trata os dados de [registro] inseridos
-    char *aceitaCartao = trataAspas(tempAceitaCartao, 10),
-        *nomeLinha = trataAspas(tempNomeLinha, 100),
-        *corLinha = trataAspas(tempCorLinha, 100);
-
-    if (tempCodLinha[0] == '*') {
-        memmove(tempCodLinha, tempCodLinha+1, strlen(tempCodLinha));
+    // Variával de armazenamento dos dados de [registro]
+    LINHA_t *tempLinha = regParaLinha(registro);
+    if (tempLinha->removido == '0')
         numRegRemovidos += 1;
-        fwrite("0", sizeof(char), 1, tabela); // Incrementa registros removidos em 1, e define 0 no arquivo.
-    }
-    else {
+    else
         numReg += 1;
-        fwrite("1", sizeof(char), 1, tabela); // Incrementa registros em 1, e define 1 no arquivo.
-    } 
-    int32_t codLinha= atoi(tempCodLinha);
-
-    if (!strcmp(aceitaCartao, "NULO")) {
-        aceitaCartao = realloc(aceitaCartao, 1);
-        aceitaCartao[0] = '\0';
-    }
-
-    if (!strcmp(nomeLinha, "NULO")) {
-        nomeLinha = realloc(nomeLinha, 1);
-        nomeLinha[0] = '\0';
-    }
-
-    if (!strcmp(corLinha, "NULO")) {
-        corLinha = realloc(corLinha, 1);
-        corLinha[0] = '\0';
-    }
+    fwrite(&(tempLinha->removido), sizeof(char), 1, tabela); // Incrementa registros em 1, e define 1 no arquivo.
 
     // Escrita dos dados de [registro] no arquivo [nomeArq] já posicionado no final [offset]
-    int32_t tamNome = strlen(nomeLinha),
-        tamCor = strlen(corLinha),
+    int32_t tamNome = strlen(tempLinha->nomeLinha),
+        tamCor = strlen(tempLinha->corLinha),
         tam = 13 + tamNome + tamCor;
     fwrite(&tam, sizeof(int32_t), 1, tabela);
-    fwrite(&codLinha, sizeof(int32_t), 1, tabela);
-    fwrite(aceitaCartao, sizeof(char), 1, tabela); 
+    fwrite(&(tempLinha->codLinha), sizeof(int32_t), 1, tabela);
+    fwrite(&(tempLinha->cartao), sizeof(char), 1, tabela);
     fwrite(&tamNome, sizeof(int32_t), 1, tabela);
-    fwrite(nomeLinha, sizeof(char), tamNome, tabela);
+    fwrite(&(tempLinha->nomeLinha), sizeof(char), tamNome, tabela);
     fwrite(&tamCor, sizeof(int32_t), 1, tabela);
-    fwrite(corLinha, sizeof(char), tamCor, tabela);
+    fwrite(&(tempLinha->corLinha), sizeof(char), tamCor, tabela);
 
     // Atualização do número de registros [numReg], byte offset [offset]
     int64_t proxReg = offset + tam + 5;
@@ -415,7 +437,7 @@ int insertLinha(char *nomeArq, char *registro) {
     fwrite("1", sizeof(char), 1, tabela);
 
     // Libera memória alocada
-    free(aceitaCartao); free(nomeLinha); free(corLinha);
+    free(tempLinha);
 
     // Fecha o arquivo
     fclose(tabela);
@@ -556,4 +578,20 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
     free(arvoreLinhas);
     fclose(arqTabela);
     return 0;
+}
+
+int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao) {
+    ARVB_t *arvore = populaArvB(arqArvore);
+    if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
+        return 1;
+
+    LINHA_t *tempLinha = regParaLinha(registro);
+
+    if (!tempLinha)
+        return 1;
+    int ret = adicionaRegistroArvB(arvore, tempLinha->codLinha, offsetInsercao);
+    free(arvore);
+    destroiLinha(tempLinha);
+
+    return ret;
 }

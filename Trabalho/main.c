@@ -252,7 +252,40 @@ int main(int argc, char **argv) {
                 ret = insertVeiculo(arqTabela, registro);
                 if (ret)
                     break;
-                adicionaVeiculoArvore(arqArvore, registro, offsetIsercao);
+                ret = adicionaVeiculoArvore(arqArvore, registro, offsetIsercao);
+                if (ret)
+                    break;
+                free(registro);
+            }
+            // Trata retorno
+            if (ret)
+                printf("Falha no processamento do arquivo.\n");
+            else
+                FF_binarioNaTela(arqArvore);
+            break;
+        }
+        case 14: {
+            // Lê entrada
+            char arqTabela[100],
+                arqArvore[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %s %d", &opcao, arqTabela, arqArvore, &num);
+            // Insere registros linha a linha
+            for (int i = 0; i < num; ++i) {
+                char *registro = leLinha(stdin);
+
+                FILE *arq = fopen(arqTabela, "rb");
+                fseek(arq, 0, SEEK_END);
+                int64_t offsetIsercao = ftell(arq);
+                fclose(arq);
+
+                ret = insertLinha(arqTabela, registro);
+                if (ret)
+                    break;
+                ret = adicionaLinhaArvore(arqArvore, registro, offsetIsercao);
+                if (ret)
+                    break;
                 free(registro);
             }
             // Trata retorno

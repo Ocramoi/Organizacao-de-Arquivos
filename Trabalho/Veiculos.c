@@ -347,7 +347,7 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     return 0;
 }
 
-VEICULO_t *regParaObj(char *registro) {
+VEICULO_t *regParaVeiculo(char *registro) {
     VEICULO_t *veiculo = malloc(sizeof(VEICULO_t));
     if (!veiculo)
         return NULL;
@@ -433,7 +433,7 @@ int insertVeiculo(char *nomeArq, char *registro) {
     int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
     int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
 
-    VEICULO_t *tempVeiculo = regParaObj(registro);
+    VEICULO_t *tempVeiculo = regParaVeiculo(registro);
 
     // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
     fseek(tabela, 0, SEEK_END);
@@ -616,7 +616,8 @@ int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInserca
     if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
         return 1;
 
-    VEICULO_t *tempVeiculo = regParaObj(registro);
+    VEICULO_t *tempVeiculo = regParaVeiculo(registro);
+
     if (!tempVeiculo)
         return 1;
     int ret = adicionaRegistroArvB(arvore, convertePrefixo(tempVeiculo->prefixo), offsetInsercao);
