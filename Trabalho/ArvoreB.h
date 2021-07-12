@@ -30,7 +30,7 @@ ARVB_t *populaArvB(char *nomeArquivo);
 
 int adicionaRegistroArvB(ARVB_t *arvore,
                          int chave,
-                         int offsetRegistro);
+                         int64_t offsetRegistro);
 
 int64_t pesquisaArvB(ARVB_t *arvore, int chave);
 

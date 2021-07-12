@@ -24,10 +24,6 @@ int escreveNoArvB(ARVB_t *arv,
     }
     int32_t noRaiz; fread(&noRaiz, sizeof(int32_t), 1, arq);
 
-    /* fseek(arq, 0, SEEK_SET); */
-    /* fwrite("0", sizeof(char), 1, arq); */
-
-    printf(":::::: %d\n\n", no->rrnNo);
     fseek(arq, TAM_PAGINA*(no->rrnNo + 1), SEEK_SET);
 
     fwrite(&(no->folha), sizeof(char), 1, arq);
@@ -157,11 +153,11 @@ int splitRrnArvB(ARVB_t *arv,
     }
 
     noY->nroChavesIndexadas = t - 1;
-    for (int j = noX->nroChavesIndexadas + 1; j >= ith + 1; --j)
+    for (int j = noX->nroChavesIndexadas; j >= ith + 1; --j)
         noX->ponteirosNos[j + 1] = noX->ponteirosNos[j];
     noX->ponteirosNos[ith + 1] = noZ->rrnNo;
 
-    for (int j = noX->nroChavesIndexadas - 1; j <= ith; --j) {
+    for (int j = noX->nroChavesIndexadas - 1; j >= ith; --j) {
         noX->registros[j + 1].chave = noX->registros[j].chave;
         noX->registros[j + 1].ponteiroRegistro = noX->registros[j].ponteiroRegistro;
     }
@@ -176,14 +172,14 @@ int splitRrnArvB(ARVB_t *arv,
     retorno ^= escreveNoArvB(arv, noZ);
     retorno ^= escreveNoArvB(arv, noX);
 
-    free(arv); free(noX); free(noY); free(noZ);
+    free(noX); free(noY); free(noZ);
     return retorno;
 }
 
 int adicionaRegistroRRNDisponivelArvB(ARVB_t *arv,
                                       int rrn,
                                       int chave,
-                                      int offsetRegistro) {
+                                      int64_t offsetRegistro) {
     int ret = 1;
     NO_ARVB_t *tempNo = leNoArvB(arv, rrn);
     if (!tempNo)
@@ -226,7 +222,7 @@ int adicionaRegistroRRNDisponivelArvB(ARVB_t *arv,
 
 int adicionaRegistroArvB(ARVB_t *arvore,
                          int chave,
-                         int offsetRegistro) {
+                         int64_t offsetRegistro) {
     if (!arvore || !arvore->nomeArq)
         return 1;
 

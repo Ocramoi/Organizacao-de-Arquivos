@@ -607,12 +607,11 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
         }
         adicionaRegistroArvB(arvoreVeiculos, convertePrefixo(veiculoAtual->prefixo), offsetAtual);
     }
-    free(arvoreVeiculos);
     fclose(arqTabela);
     return 0;
 }
 
-int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInsercao, char* arqTabela) {
+int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInsercao) {
     ARVB_t *arvore = populaArvB(arqArvore);
     if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
         return 1;
@@ -621,11 +620,6 @@ int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInserca
     if (!tempVeiculo)
         return 1;
     int ret = adicionaRegistroArvB(arvore, convertePrefixo(tempVeiculo->prefixo), offsetInsercao);
-
-    printf(":::::: %s ", tempVeiculo->prefixo);
-    printf("%d\n", ret);
-    int temp = pesquisaVeiculoArvB(arqTabela, arqArvore, tempVeiculo->prefixo);
-    printf("---> %d\n\n", temp);
     free(arvore);
     destroiVeiculo(tempVeiculo);
 

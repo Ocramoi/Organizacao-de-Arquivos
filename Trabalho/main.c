@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
                 ret = insertVeiculo(arqTabela, registro);
                 if (ret)
                     break;
-                adicionaVeiculoArvore(arqArvore, registro, offsetIsercao, arqTabela);
+                adicionaVeiculoArvore(arqArvore, registro, offsetIsercao);
                 free(registro);
             }
             // Trata retorno
