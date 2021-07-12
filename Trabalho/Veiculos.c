@@ -613,6 +613,9 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     // Cria e popula árvore
     ARVB_t *arvoreVeiculos = populaArvB(arvore);
 
+    // Auxiliar de retorno
+    int ret;
+
     // Para cada registro
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
         // Salva offset para adição na árvore
@@ -630,11 +633,13 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
             continue;
         }
         // Adiciona veículo à árvore
-        adicionaRegistroArvB(arvoreVeiculos, convertePrefixo(veiculoAtual->prefixo), offsetAtual);
+        ret = adicionaRegistroArvB(arvoreVeiculos, convertePrefixo(veiculoAtual->prefixo), offsetAtual);
+        destroiVeiculo(veiculoAtual);
     }
-    // Fecha arquivo
-    fclose(arqTabela);
-    return 0;
+
+    // Libera memória alocada
+    fclose(arqTabela); free(arvoreVeiculos);
+    return ret;
 }
 
 /* "INSERT INTO Veiculos [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
@@ -646,13 +651,14 @@ int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInserca
 
     // Gera veículo pelo registro
     VEICULO_t *tempVeiculo = regParaVeiculo(registro);
-    // Confre veículo criado
+    // Confere veículo criado
     if (!tempVeiculo)
         return 1;
-    // Adiciona e confere retorno
+    // Adiciona e registra retorno
     int ret = adicionaRegistroArvB(arvore, convertePrefixo(tempVeiculo->prefixo), offsetInsercao);
 
     // Libera memória alocada
     free(arvore); destroiVeiculo(tempVeiculo);
+
     return ret;
 }

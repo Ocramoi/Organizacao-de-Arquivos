@@ -30,9 +30,10 @@ int insertLinha(char *nomeArq, char *registro);
 /* "CREATE INDEX ... Linhas" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
 int criaArvoreLinhas(char *arvore, char *tabela);
 
-
+/* "INSERT INTO Linhas [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
 int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao);
+
+/* "SELECT * from Linhas WHERE ..." -> Seleciona e exibe registro do arquivo binário [arqTabela] de linhas com [codLinha] dado com pesquisa na árvore [arqArvore] */
 int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha);
-int exibeLinhaOffset(char *tabela, int64_t offset);
 
 #endif // __LINHAS_H_

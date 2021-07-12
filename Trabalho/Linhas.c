@@ -444,32 +444,17 @@ int insertLinha(char *nomeArq, char *registro) {
     return 0;
 }
 
-int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha) {
-    if (!arqTabela || !arqArvore || codLinha < 0)
-        return -1;
-
-    ARVB_t *arvore = populaArvB(arqArvore);
-    if (!arvore)
-        return 1;
-
-    int64_t offSetPesquisa = pesquisaArvB(arvore, codLinha);
-    if (offSetPesquisa > 0)
-        exibeLinhaOffset(arqTabela, offSetPesquisa);
-
-    free(arvore);
-
-    if (offSetPesquisa > 0)
-        return 0;
-    return 2;
-}
-
+// Lê e exibe linha lida na [tabela] no [offset]
 int exibeLinhaOffset(char *tabela, int64_t offset) {
     FILE *arq = fopen(tabela, "rb");
     if (!tabela || !arq)
         return -1;
 
+    // Vai ao offset e lê veículo
     fseek(arq, offset, SEEK_SET);
     LINHA_t *tempLinha = leObjLinha(arq);
+
+    // Lê cabeçalho de arquivo
     fseek(arq, 0, SEEK_SET);
 
     // Lê e confere status do arquivo
@@ -537,6 +522,33 @@ int exibeLinhaOffset(char *tabela, int64_t offset) {
     return 0;
 }
 
+/* "SELECT * from Linhas WHERE ..." -> Seleciona e exibe registro do arquivo binário [arqTabela] de linhas com [codLinha] dado com pesquisa na árvore [arqArvore] */
+int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha) {
+    // Confere parâmetros
+    if (!arqTabela || !arqArvore || codLinha < 0)
+        return -1;
+
+    // Popula estrutura da árvore para pesquisa
+    ARVB_t *arvore = populaArvB(arqArvore);
+    if (!arvore)
+        return 1;
+
+    // Busca offset para codLinha dado
+    int64_t offSetPesquisa = pesquisaArvB(arvore, codLinha);
+
+    // Caso registro achado na árvore, exibe
+    if (offSetPesquisa > 0)
+        exibeLinhaOffset(arqTabela, offSetPesquisa);
+
+    // Libera memória alocada
+    free(arvore);
+
+    // Trata valor de retorno
+    if (offSetPesquisa > 0)
+        return 0;
+    return 2;
+}
+
 /* "CREATE INDEX ... Linhas" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
 int criaArvoreLinhas(char *tabela, char *arvore) {
     // Testa nome de arquivo e arquivo aberto
@@ -561,37 +573,57 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
     }
     fseek(arqTabela, 82, SEEK_SET);
 
+    // Cria e popula árvore
     ARVB_t *arvoreLinhas = populaArvB(arvore);
+
+    // Auxiliar de retorno
+    int ret;
+
+    // Para cada registro
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+        // Salva offset para adição na árvore
         int64_t offsetAtual = ftell(arqTabela);
+
+        // Lê linha atual da lista
         LINHA_t *linhaAtual = leObjLinha(arqTabela);
         if (!linhaAtual) {
             fclose(arqTabela);
             return 1;
         }
+        // Confere linha removida
         if (!linhaAtual->removido) {
             destroiLinha(linhaAtual);
             continue;
         }
-        adicionaRegistroArvB(arvoreLinhas, linhaAtual->codLinha, offsetAtual);
+
+        // Adiciona linha à árvore
+        ret = adicionaRegistroArvB(arvoreLinhas, linhaAtual->codLinha, offsetAtual);
+        destroiLinha(linhaAtual);
     }
-    free(arvoreLinhas);
-    fclose(arqTabela);
-    return 0;
+
+    // Libera memória alocada
+    free(arvoreLinhas); fclose(arqTabela);
+    return ret;
 }
 
+/* "INSERT INTO Linhas [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
 int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao) {
+    // Popula árvore com arquivo dado
     ARVB_t *arvore = populaArvB(arqArvore);
     if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
         return 1;
 
+    // Gera linha pelo registro
     LINHA_t *tempLinha = regParaLinha(registro);
 
+    // Confere linha criada
     if (!tempLinha)
         return 1;
+    // Adiciona e registra retorno
     int ret = adicionaRegistroArvB(arvore, tempLinha->codLinha, offsetInsercao);
-    free(arvore);
-    destroiLinha(tempLinha);
+
+    // Libera memória alocada
+    free(arvore); destroiLinha(tempLinha);
 
     return ret;
 }
