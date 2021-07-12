@@ -23,6 +23,7 @@ int escreveNoArvB(ARVB_t *arv,
         return 1;
     }
     int32_t noRaiz; fread(&noRaiz, sizeof(int32_t), 1, arq);
+    int32_t proxNo; fread(&proxNo, sizeof(int32_t), 1, arq);
 
     fseek(arq, TAM_PAGINA*(no->rrnNo + 1), SEEK_SET);
 
@@ -53,8 +54,8 @@ NO_ARVB_t* criaNoArvB() {
     for (int i = 0; i < (REGS_FOLHA + 1); ++i)
         arv->ponteirosNos[i] = -1;
     for (int i = 0; i < REGS_FOLHA; ++i) {
-        arv->registros->chave = -1;
-        arv->registros->ponteiroRegistro = -1;
+        arv->registros[i].chave = -1;
+        arv->registros[i].ponteiroRegistro = -1;
     }
     return arv;
 }
@@ -212,8 +213,8 @@ int adicionaRegistroRRNDisponivelArvB(ARVB_t *arv,
             tempNo = leNoArvB(arv, rrn); noInsercao = leNoArvB(arv, tempNo->ponteirosNos[i]);
             if (chave > tempNo->registros[i].chave)
                 i++;
-            free(noInsercao);
         }
+        free(noInsercao);
         ret = adicionaRegistroRRNDisponivelArvB(arv, tempNo->ponteirosNos[i], chave, offsetRegistro);
     }
     free(tempNo);
@@ -240,9 +241,8 @@ int adicionaRegistroArvB(ARVB_t *arvore,
         noInsercao->nroChavesIndexadas = 0;
         noInsercao->ponteirosNos[0] = arvore->noRaiz;
         arvore->noRaiz = noInsercao->rrnNo;
-        escreveNoArvB(arvore, noInsercao);
-
         escreveCabecalhoArvB(arvore);
+        escreveNoArvB(arvore, noInsercao);
 
         free(noInsercao);
         splitRrnArvB(arvore, arvore->noRaiz, 0);
