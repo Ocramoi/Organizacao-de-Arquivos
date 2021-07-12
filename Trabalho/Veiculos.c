@@ -347,7 +347,9 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     return 0;
 }
 
+/* Converte linha de [resgitro] para objeto de VEICULO_t */
 VEICULO_t *regParaVeiculo(char *registro) {
+    // Cria veículo para retorno
     VEICULO_t *veiculo = malloc(sizeof(VEICULO_t));
     if (!veiculo)
         return NULL;
@@ -400,6 +402,7 @@ VEICULO_t *regParaVeiculo(char *registro) {
     else
         codLinha = atoi(tempCodLinha);
 
+    // Retorno registro lido
     veiculo->removido = '1';
     memcpy(veiculo->prefixo, prefixo, 6);
     veiculo->data = data;
@@ -435,11 +438,11 @@ int insertVeiculo(char *nomeArq, char *registro) {
 
     VEICULO_t *tempVeiculo = regParaVeiculo(registro);
 
-    // Posiciona o arquivo [nomeArq] no byte offset/final do arquivo
+    // Posiciona o arquivo [nomeArq] no byte offset final do arquivo
     fseek(tabela, 0, SEEK_END);
 
     // Escrita dos dados de [registro] no arquivo [nomeArq] já posicionado no final [offset]
-    fwrite("1", sizeof(char), 1, tabela);
+    fwrite(&(tempVeiculo->removido), sizeof(char), 1, tabela);
     int32_t tamModelo = strlen(tempVeiculo->modelo),
         tamCategoria = strlen(tempVeiculo->categoria),
         tam = 31 + tamModelo + tamCategoria;
@@ -475,33 +478,18 @@ int insertVeiculo(char *nomeArq, char *registro) {
     return 0;
 }
 
-int pesquisaVeiculoArvB(char *arqTabela, char *arqArvore, char *prefixo) {
-    if (!arqTabela || !arqArvore || !prefixo)
-        return -1;
-
-    char *valorTratado = trataAspas(prefixo, 100);
-    ARVB_t *arvore = populaArvB(arqArvore);
-    if (!arvore)
-        return 1;
-
-    int64_t offSetPesquisa = pesquisaArvB(arvore, convertePrefixo(valorTratado));
-    if (offSetPesquisa > 0)
-        exibeVeiculoOffset(arqTabela, offSetPesquisa);
-
-    free(arvore); free(valorTratado);
-
-    if (offSetPesquisa > 0)
-        return 0;
-    return 2;
-}
-
+// Lê e exibe veículo lido na [tabela] no [offset]
 int exibeVeiculoOffset(char *tabela, int64_t offset) {
+    // Abre e confere arquivo
     FILE *arq = fopen(tabela, "rb");
     if (!tabela || !arq)
         return -1;
 
+    // Vai ao offset e lê veículo
     fseek(arq, offset, SEEK_SET);
     VEICULO_t *tempVeiculo = leVeiculo(arq);
+
+    // Lê cabeçalho de arquivo
     fseek(arq, 0, SEEK_SET);
 
     // Lê e confere status do arquivo
@@ -563,10 +551,39 @@ int exibeVeiculoOffset(char *tabela, int64_t offset) {
     printf("\n");
 
     destroiVeiculo(tempVeiculo);
+
     // Libera memória alocada
     free(prefixo); free(data); free(lugares); free(linha); free(modelo); free(categoria);
     fclose(arq);
     return 0;
+}
+
+/* "SELECT * from Veiculos WHERE ..." -> Seleciona e exibe registro do arquivo binário [arqTabela] de veículos com [prefixo] dado com pesquisa na árvore [arqArvore] */
+int pesquisaVeiculoArvB(char *arqTabela, char *arqArvore, char *prefixo) {
+    // Confere parâmetros
+    if (!arqTabela || !arqArvore || !prefixo)
+        return -1;
+
+    // Popula estrutura da árvore para pesquisa
+    ARVB_t *arvore = populaArvB(arqArvore);
+    if (!arvore)
+        return 1;
+
+    // Busca offset para prefixo tratado dado
+    char *valorTratado = trataAspas(prefixo, 100);
+    int64_t offSetPesquisa = pesquisaArvB(arvore, convertePrefixo(valorTratado));
+
+    // Caso registro achado na árvore, exibe
+    if (offSetPesquisa > 0)
+        exibeVeiculoOffset(arqTabela, offSetPesquisa);
+
+    // Libera memória alocada
+    free(arvore); free(valorTratado);
+
+    // Trata valor de retorno
+    if (offSetPesquisa > 0)
+        return 0;
+    return 2;
 }
 
 /* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
@@ -593,36 +610,49 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     }
     fseek(arqTabela, 174, SEEK_SET);
 
+    // Cria e popula árvore
     ARVB_t *arvoreVeiculos = populaArvB(arvore);
+
+    // Para cada registro
     for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+        // Salva offset para adição na árvore
         int64_t offsetAtual = ftell(arqTabela);
+
+        // Lê veículo atual da lista
         VEICULO_t *veiculoAtual = leVeiculo(arqTabela);
         if (!veiculoAtual) {
             fclose(arqTabela);
             return 1;
         }
+        // Confere veículo removido
         if (!veiculoAtual->removido) {
             destroiVeiculo(veiculoAtual);
             continue;
         }
+        // Adiciona veículo à árvore
         adicionaRegistroArvB(arvoreVeiculos, convertePrefixo(veiculoAtual->prefixo), offsetAtual);
     }
+    // Fecha arquivo
     fclose(arqTabela);
     return 0;
 }
 
+/* "INSERT INTO Veiculos [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
 int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInsercao) {
+    // Popula árvore com arquivo dado
     ARVB_t *arvore = populaArvB(arqArvore);
     if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
         return 1;
 
+    // Gera veículo pelo registro
     VEICULO_t *tempVeiculo = regParaVeiculo(registro);
-
+    // Confre veículo criado
     if (!tempVeiculo)
         return 1;
+    // Adiciona e confere retorno
     int ret = adicionaRegistroArvB(arvore, convertePrefixo(tempVeiculo->prefixo), offsetInsercao);
-    free(arvore);
-    destroiVeiculo(tempVeiculo);
 
+    // Libera memória alocada
+    free(arvore); destroiVeiculo(tempVeiculo);
     return ret;
 }

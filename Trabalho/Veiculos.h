@@ -30,9 +30,10 @@ int insertVeiculo(char *nomeArq, char *registro);
 /* "CREATE INDEX ... Veiculos" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
 int criaArvoreVeiculos(char *arvore, char *tabela);
 
-
+/* "INSERT INTO Veiculos [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
 int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInsercao);
+
+/* "SELECT * from Veiculos WHERE ..." -> Seleciona e exibe registro do arquivo binário [arqTabela] de veículos com [prefixo] dado com pesquisa na árvore [arqArvore] */
 int pesquisaVeiculoArvB(char *arqTabela, char *arqArvore, char *prefixo);
-int exibeVeiculoOffset(char *tabela, int64_t offset);
 
 #endif // __VEICULOSARQ_H_

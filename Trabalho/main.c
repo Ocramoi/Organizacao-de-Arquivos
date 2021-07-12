@@ -246,16 +246,21 @@ int main(int argc, char **argv) {
             sscanf(entrada, "%d %s %s %d", &opcao, arqTabela, arqArvore, &num);
             // Insere registros linha a linha
             for (int i = 0; i < num; ++i) {
+                // Lê linha
                 char *registro = leLinha(stdin);
 
+                // Pega offset da inserção na tabela
                 FILE *arq = fopen(arqTabela, "rb");
                 fseek(arq, 0, SEEK_END);
                 int64_t offsetIsercao = ftell(arq);
                 fclose(arq);
 
+                // Insere veículo à tabela
                 ret = insertVeiculo(arqTabela, registro);
                 if (ret)
                     break;
+
+                // Insere veículo à árvore
                 ret = adicionaVeiculoArvore(arqArvore, registro, offsetIsercao);
                 if (ret)
                     break;
@@ -277,16 +282,21 @@ int main(int argc, char **argv) {
             sscanf(entrada, "%d %s %s %d", &opcao, arqTabela, arqArvore, &num);
             // Insere registros linha a linha
             for (int i = 0; i < num; ++i) {
+                // Lê linha
                 char *registro = leLinha(stdin);
 
+                // Pega offset da inserção na tabela
                 FILE *arq = fopen(arqTabela, "rb");
                 fseek(arq, 0, SEEK_END);
                 int64_t offsetIsercao = ftell(arq);
                 fclose(arq);
 
+                // Insere veículo à tabela
                 ret = insertLinha(arqTabela, registro);
                 if (ret)
                     break;
+
+                // Insere veículo à árvore
                 ret = adicionaLinhaArvore(arqArvore, registro, offsetIsercao);
                 if (ret)
                     break;
