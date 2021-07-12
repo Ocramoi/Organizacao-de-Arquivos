@@ -172,6 +172,7 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                  arqArvore[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqArvore);
+            // Cria árvore e trata retorno
             if (criaArvoreVeiculos(arqArvore, arqEntrada))
                 printf("Falha no processamento do arquivo.\n");
             else
@@ -183,6 +184,7 @@ int main(int argc, char **argv) {
             char arqEntrada[100],
                  arqArvore[100];
             sscanf(entrada, "%d %s %s", &opcao, arqEntrada, arqArvore);
+            // Cria árvore e trata retorno
             if (criaArvoreLinhas(arqArvore, arqEntrada))
                 printf("Falha no processamento do arquivo.\n");
             else
@@ -195,6 +197,7 @@ int main(int argc, char **argv) {
                 arqArvore[100],
                 valor[100];
             sscanf(entrada, "%d %s %s %s %s", &opcao, arqTabela, arqArvore, valor, valor);
+            // Pesquisa veículo e trata possíveis mensagens de erro
             switch (pesquisaVeiculoArvB(arqTabela, arqArvore, valor)) {
                 case -1:
                     printf("Arquivo inexistente.\n");
@@ -218,6 +221,7 @@ int main(int argc, char **argv) {
                 valor[100];
             int codLinha;
             sscanf(entrada, "%d %s %s %s %d", &opcao, arqTabela, arqArvore, campo, &codLinha);
+            // Pesquisa linha e trata possíveis mensagens de erro
             switch (pesquisaLinhaArvB(arqTabela, arqArvore, codLinha)) {
                 case -1:
                     printf("Arquivo inexistente.\n");
