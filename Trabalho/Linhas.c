@@ -372,10 +372,13 @@ LINHA_t *regParaLinha(char *registro) {
         corLinha[0] = '\0';
     }
 
+    tempLinha->removido = '1';
     tempLinha->cartao = aceitaCartao[0];
     tempLinha->codLinha = codLinha;
     tempLinha->corLinha = corLinha;
     tempLinha->nomeLinha = nomeLinha;
+
+    free(aceitaCartao);
 
     return tempLinha;
 }
@@ -421,9 +424,9 @@ int insertLinha(char *nomeArq, char *registro) {
     fwrite(&(tempLinha->codLinha), sizeof(int32_t), 1, tabela);
     fwrite(&(tempLinha->cartao), sizeof(char), 1, tabela);
     fwrite(&tamNome, sizeof(int32_t), 1, tabela);
-    fwrite(&(tempLinha->nomeLinha), sizeof(char), tamNome, tabela);
+    fwrite(tempLinha->nomeLinha, sizeof(char), tamNome, tabela);
     fwrite(&tamCor, sizeof(int32_t), 1, tabela);
-    fwrite(&(tempLinha->corLinha), sizeof(char), tamCor, tabela);
+    fwrite(tempLinha->corLinha, sizeof(char), tamCor, tabela);
 
     // Atualização do número de registros [numReg], byte offset [offset]
     int64_t proxReg = offset + tam + 5;
@@ -607,7 +610,7 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
 }
 
 /* "INSERT INTO Linhas [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
-int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao, char *arqTabela) {
+int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao) {
     // Popula árvore com arquivo dado
     ARVB_t *arvore = populaArvB(arqArvore);
     if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
@@ -621,7 +624,6 @@ int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao,
         return 1;
     // Adiciona e registra retorno
     int ret = adicionaRegistroArvB(arvore, tempLinha->codLinha, offsetInsercao);
-    pesquisaLinhaArvB(arqTabela, arqArvore, tempLinha->codLinha);
 
     // Libera memória alocada
     free(arvore); destroiLinha(tempLinha);
