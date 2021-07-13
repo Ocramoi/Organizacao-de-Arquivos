@@ -38,9 +38,6 @@ int escreveNoArvB(ARVB_t *arv,
     }
     fwrite(&(no->ponteirosNos[REGS_FOLHA]), sizeof(int32_t), 1, arq);
 
-    /* fseek(arq, 0, SEEK_SET); */
-    /* rewind(arq); */
-    /* fwrite("1", sizeof(char), 1, arq); */
     fclose(arq);
 
     return 0;
@@ -61,7 +58,7 @@ NO_ARVB_t* criaNoArvB() {
 }
 
 NO_ARVB_t *leNoArvB(ARVB_t *arvore, int rrn) {
-    if (!arvore || !arvore->nomeArq)
+    if (!arvore || !arvore->nomeArq || rrn < 0)
         return NULL;
 
     FILE *arq = fopen(arvore->nomeArq, "rb");
@@ -130,42 +127,119 @@ ARVB_t *criaArvB(char *arquivo) {
     return arv;
 }
 
+/* int splitRrnArvB(ARVB_t *arv, */
+/*                  int rrn, */
+/*                  int ith) { */
+/*     int t = REGS_FOLHA/2; */
+/*     NO_ARVB_t *noX = leNoArvB(arv, rrn), */
+/*         *noZ = criaNoArvB(), */
+/*         *noY = leNoArvB(arv, noX->ponteirosNos[ith]); */
+/*     noZ->rrnNo = arv->proxNo; */
+/*     arv->proxNo++; */
+
+/*     noZ->folha = noY->folha; */
+/*     noZ->nroChavesIndexadas = t - 1; */
+
+/*     for (int j = 0; j < noZ->nroChavesIndexadas; ++j) { */
+/*         noZ->registros[j].chave = noY->registros[j + t].chave; */
+/*         noZ->registros[j].ponteiroRegistro = noY->registros[j + t].ponteiroRegistro; */
+/*     } */
+
+/*     if (noY->folha != '1') { */
+/*         for (int j = 0; j < noZ->nroChavesIndexadas + 1; ++j) */
+/*             noZ->ponteirosNos[j] = noY->ponteirosNos[j + t]; */
+/*     } */
+
+/*     noY->nroChavesIndexadas = t - 1; */
+/*     for (int j = noX->nroChavesIndexadas; j >= ith + 1; --j) */
+/*         noX->ponteirosNos[j + 1] = noX->ponteirosNos[j]; */
+/*     noX->ponteirosNos[ith + 1] = noZ->rrnNo; */
+
+/*     for (int j = noX->nroChavesIndexadas - 1; j >= ith; --j) { */
+/*         noX->registros[j + 1].chave = noX->registros[j].chave; */
+/*         noX->registros[j + 1].ponteiroRegistro = noX->registros[j].ponteiroRegistro; */
+/*     } */
+
+/*     noX->registros[ith].chave = noY->registros[t].chave; */
+/*     noX->registros[ith].ponteiroRegistro = noY->registros[t].ponteiroRegistro; */
+/*     noX->nroChavesIndexadas++; */
+
+/*     int retorno = 0; */
+/*     retorno ^= escreveCabecalhoArvB(arv); */
+/*     retorno ^= escreveNoArvB(arv, noY); */
+/*     retorno ^= escreveNoArvB(arv, noZ); */
+/*     retorno ^= escreveNoArvB(arv, noX); */
+
+/*     free(noX); free(noY); free(noZ); */
+/*     return retorno; */
+/* } */
+
 int splitRrnArvB(ARVB_t *arv,
                  int rrn,
-                 int ith) {
+                 int ith,
+                 int chave,
+                 int64_t offsetRegistro) {
     int t = REGS_FOLHA/2;
     NO_ARVB_t *noX = leNoArvB(arv, rrn),
         *noZ = criaNoArvB(),
         *noY = leNoArvB(arv, noX->ponteirosNos[ith]);
     noZ->rrnNo = arv->proxNo;
     arv->proxNo++;
-
     noZ->folha = noY->folha;
-    noZ->nroChavesIndexadas = t - 1;
 
-    for (int j = 0; j < t - 1; ++j) {
-        noZ->registros[j].chave = noY->registros[j + t].chave;
-        noZ->registros[j].ponteiroRegistro = noY->registros[j + t].ponteiroRegistro;
+    CONJUNTO_CHAVE_PONTEIRO_t registros[REGS_FOLHA + 1];
+    int pos;
+    for (pos = 0; pos < REGS_FOLHA && noY->registros[pos].chave < chave; ++pos) {
+        registros[pos].chave = noY->registros[pos].chave;
+        registros[pos].ponteiroRegistro = noY->registros[pos].ponteiroRegistro;
     }
 
-    if (noY->folha != '1') {
-        for (int j = 0; j < t; ++j)
-            noZ->ponteirosNos[j] = noY->ponteirosNos[j + t];
+    for (int i = REGS_FOLHA; i > pos; --i) {
+        registros[i].chave = noY->registros[i - 1].chave;
+        registros[i].ponteiroRegistro = noY->registros[i - 1].ponteiroRegistro;
     }
 
-    noY->nroChavesIndexadas = t - 1;
+    registros[pos].chave = chave;
+    registros[pos].ponteiroRegistro = offsetRegistro;
+
+    noZ->nroChavesIndexadas = noY->nroChavesIndexadas = t;
+
+    for (int i = 0; i < t; ++i) {
+        noY->registros[i].chave = registros[i].chave;
+        noY->registros[i].ponteiroRegistro = registros[i].ponteiroRegistro;
+    }
+
+    for (int i = 0; i < noZ->nroChavesIndexadas; ++i) {
+        noZ->registros[i].chave = registros[t + 1 + i].chave;
+        noZ->registros[i].ponteiroRegistro = registros[t + 1 + i].ponteiroRegistro;
+    }
+
+    for (pos = 0; pos < noX->nroChavesIndexadas && noX->registros[pos].chave < chave; ++pos) {
+        noX->registros[pos].chave = noX->registros[pos].chave;
+        noX->registros[pos].ponteiroRegistro = noX->registros[pos].ponteiroRegistro;
+    }
+
+    for (int j = noX->nroChavesIndexadas; j > pos; --j) {
+        noX->registros[j].chave = noX->registros[j - 1].chave;
+        noX->registros[j].ponteiroRegistro = noX->registros[j - 1].ponteiroRegistro;
+    }
+
+    noX->registros[pos].chave = registros[t].chave;
+    noX->registros[pos].ponteiroRegistro = registros[t].ponteiroRegistro;
+
+    noX->nroChavesIndexadas++;
+
+    for (int j = 0; j < noZ->nroChavesIndexadas + 1; ++j)
+        noZ->ponteirosNos[j] = noY->ponteirosNos[j + t];
+
     for (int j = noX->nroChavesIndexadas; j >= ith + 1; --j)
         noX->ponteirosNos[j + 1] = noX->ponteirosNos[j];
     noX->ponteirosNos[ith + 1] = noZ->rrnNo;
 
-    for (int j = noX->nroChavesIndexadas - 1; j >= ith; --j) {
-        noX->registros[j + 1].chave = noX->registros[j].chave;
-        noX->registros[j + 1].ponteiroRegistro = noX->registros[j].ponteiroRegistro;
-    }
-
-    noX->registros[ith].chave = noY->registros[t].chave;
-    noX->registros[ith].ponteiroRegistro = noY->registros[t].ponteiroRegistro;
-    noX->nroChavesIndexadas++;
+    /* for (int i = REGS_FOLHA - 1; i >= noY->nroChavesIndexadas; --i) { */
+    /*     noY->registros[i].chave = -1; */
+    /*     noY->registros[i].ponteiroRegistro = -1; */
+    /* } */
 
     int retorno = 0;
     retorno ^= escreveCabecalhoArvB(arv);
@@ -181,7 +255,7 @@ int adicionaRegistroRRNDisponivelArvB(ARVB_t *arv,
                                       int rrn,
                                       int chave,
                                       int64_t offsetRegistro) {
-    int ret = 1;
+    int ret;
     NO_ARVB_t *tempNo = leNoArvB(arv, rrn);
     if (!tempNo)
         return ret;
@@ -207,17 +281,19 @@ int adicionaRegistroRRNDisponivelArvB(ARVB_t *arv,
         i++;
 
         NO_ARVB_t *noInsercao = leNoArvB(arv, tempNo->ponteirosNos[i]);
-        if (noInsercao->nroChavesIndexadas == REGS_FOLHA) {
-            free(tempNo); free(noInsercao);
-            splitRrnArvB(arv, rrn, i);
-            tempNo = leNoArvB(arv, rrn); noInsercao = leNoArvB(arv, tempNo->ponteirosNos[i]);
-            if (chave > tempNo->registros[i].chave)
-                i++;
+        if (noInsercao->nroChavesIndexadas == REGS_FOLHA && noInsercao->folha == '1') {
+            /* free(tempNo); */
+            ret = splitRrnArvB(arv, rrn, i, chave, offsetRegistro);
+            /* tempNo = leNoArvB(arv, rrn); */
+            /* if (chave > tempNo->registros[i].chave) */
+            /*     i++; */
         }
+        else
+            ret = adicionaRegistroRRNDisponivelArvB(arv, tempNo->ponteirosNos[i], chave, offsetRegistro);
         free(noInsercao);
-        ret = adicionaRegistroRRNDisponivelArvB(arv, tempNo->ponteirosNos[i], chave, offsetRegistro);
     }
     free(tempNo);
+
     return ret;
 }
 
@@ -226,9 +302,6 @@ int adicionaRegistroArvB(ARVB_t *arvore,
                          int64_t offsetRegistro) {
     if (!arvore || !arvore->nomeArq)
         return 1;
-
-    /* if (pesquisaArvB(arvore, chave) >= 0) */
-    /*     return 1; */
 
     int retorno;
     NO_ARVB_t *root = leNoArvB(arvore, arvore->noRaiz);
@@ -245,8 +318,9 @@ int adicionaRegistroArvB(ARVB_t *arvore,
         escreveNoArvB(arvore, noInsercao);
 
         free(noInsercao);
-        splitRrnArvB(arvore, arvore->noRaiz, 0);
-        retorno = adicionaRegistroRRNDisponivelArvB(arvore, arvore->noRaiz, chave, offsetRegistro);
+
+        retorno = splitRrnArvB(arvore, arvore->noRaiz, 0, chave, offsetRegistro);
+        /* retorno = adicionaRegistroRRNDisponivelArvB(arvore, arvore->noRaiz, chave, offsetRegistro); */
     } else
         retorno = adicionaRegistroRRNDisponivelArvB(arvore,
                                                     arvore->noRaiz,

@@ -607,7 +607,7 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
 }
 
 /* "INSERT INTO Linhas [INDEX] ..." -> Insere informações lidas em [registro] na árvore do arquivo [arqArvore] dada presente no [offsetInsercao] */
-int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao) {
+int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao, char *arqTabela) {
     // Popula árvore com arquivo dado
     ARVB_t *arvore = populaArvB(arqArvore);
     if (!arvore || !arqArvore || !registro || offsetInsercao < 0)
@@ -621,6 +621,7 @@ int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao)
         return 1;
     // Adiciona e registra retorno
     int ret = adicionaRegistroArvB(arvore, tempLinha->codLinha, offsetInsercao);
+    pesquisaLinhaArvB(arqTabela, arqArvore, tempLinha->codLinha);
 
     // Libera memória alocada
     free(arvore); destroiLinha(tempLinha);
