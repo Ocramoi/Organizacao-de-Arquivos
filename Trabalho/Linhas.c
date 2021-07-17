@@ -317,6 +317,7 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     return 0;
 }
 
+/* Transforma linah de [registro] em objeto de linha */
 LINHA_t *regParaLinha(char *registro) {
     if (!registro)
         return NULL;
@@ -372,7 +373,6 @@ LINHA_t *regParaLinha(char *registro) {
         corLinha[0] = '\0';
     }
 
-    tempLinha->removido = '1';
     tempLinha->cartao = aceitaCartao[0];
     tempLinha->codLinha = codLinha;
     tempLinha->corLinha = corLinha;

@@ -1,6 +1,6 @@
 /*
 ** SCC0215 - Organização de arquivos
-** Trabalho 1
+** Trabalho 2
 **
 ** Alunos:
 ** - Marco Antônio Ribeiro de Toledo, RA: 11796419
@@ -252,7 +252,7 @@ int main(int argc, char **argv) {
                 // Pega offset da inserção na tabela
                 FILE *arq = fopen(arqTabela, "rb");
                 fseek(arq, 0, SEEK_END);
-                int64_t offsetIsercao = ftell(arq);
+                int64_t offsetInsercao = ftell(arq);
                 fclose(arq);
 
                 // Insere veículo à tabela
@@ -261,7 +261,7 @@ int main(int argc, char **argv) {
                     break;
 
                 // Insere veículo à árvore
-                ret = adicionaVeiculoArvore(arqArvore, registro, offsetIsercao);
+                ret = adicionaVeiculoArvore(arqArvore, registro, offsetInsercao);
                 if (ret)
                     break;
                 free(registro);
@@ -288,7 +288,7 @@ int main(int argc, char **argv) {
                 // Pega offset da inserção na tabela
                 FILE *arq = fopen(arqTabela, "rb");
                 fseek(arq, 0, SEEK_END);
-                int64_t offsetIsercao = ftell(arq);
+                int64_t offsetInsercao = ftell(arq);
                 fclose(arq);
 
                 // Insere veículo à tabela
@@ -297,7 +297,7 @@ int main(int argc, char **argv) {
                     break;
 
                 // Insere veículo à árvore
-                ret = adicionaLinhaArvore(arqArvore, registro, offsetIsercao);
+                ret = adicionaLinhaArvore(arqArvore, registro, offsetInsercao);
                 if (ret)
                     break;
                 free(registro);
@@ -308,6 +308,16 @@ int main(int argc, char **argv) {
             else
                 FF_binarioNaTela(arqArvore);
             break;
+        }
+        case 15: {
+            // Lê entrada
+            char arqVeiculos[100],
+                arqLinhas[100],
+                campoVeiculo[100],
+                campoLinha[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %s %s %s", &opcao, arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
         }
         default:
             printf("Opção digitada inválida!\n");
