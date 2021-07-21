@@ -606,8 +606,8 @@ CABECALHO_LINHAS_t *leCabecalhoLinhas(FILE *arq) {
 
     // Lê e confere status do arquivo
     fread(&(cabecalho->status), sizeof(char), 1, arq);
-    if (cabecalho->status != '1')
-        return cabecalho;
+    /* if (cabecalho->status != '1') */
+    /*     return cabecalho; */
     fread(&(cabecalho->byteOffset), sizeof(int64_t), 1, arq);
 
     // Lê contagem de registros

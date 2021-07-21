@@ -7,7 +7,10 @@ int selectJoinVeiculosLinhas(char *arqVeiculos, char *arqLinhas, char *campoVeic
         *tabelaLinhas = fopen(arqLinhas, "rb");
     if (!arqVeiculos || !arqLinhas ||
         !tabelaVeiculos || !tabelaLinhas) {
-        fclose(tabelaLinhas); fclose(tabelaVeiculos);
+        if (tabelaLinhas)
+            fclose(tabelaLinhas);
+        if (tabelaVeiculos)
+            fclose(tabelaVeiculos);
         return -1;
     }
 
@@ -78,6 +81,97 @@ int selectJoinVeiculosLinhas(char *arqVeiculos, char *arqLinhas, char *campoVeic
     fclose(tabelaVeiculos); fclose(tabelaLinhas);
     // Libera memória alocada
     destroiCabecalhoVeiculos(cabecalhoVeiculos); destroiCabecalhoLinhas(cabecalhoLinhas);
+
+    return !exibido;
+}
+
+/* "SELECT * from Veiculos JOIN Linhas WHERE INDEX ..." -> Seleciona e exibe veículos de [arqVeiculos] e linhas de [arqLinhas] com mesmo código de linha, realizando a pesquisa na árvore b */
+int selectJoinVeiculosLinhasArvB(char *arqVeiculos, char *arqLinhas,
+                                 char *campoVeiculos, char *campoLinha,
+                                 char *indiceLinha) {
+    // Testa nome dos arquivo e arquivos abertos
+    FILE *tabelaVeiculos = fopen(arqVeiculos, "rb"),
+        *tabelaLinhas = fopen(arqLinhas, "rb");
+    if (!arqVeiculos || !arqLinhas || !indiceLinha ||
+        !tabelaVeiculos || !tabelaLinhas) {
+        if (tabelaVeiculos)
+            fclose(tabelaVeiculos);
+        if (tabelaLinhas)
+            fclose(tabelaLinhas);
+        return -1;
+    }
+
+    // Lê cabeçalhos de arquivos
+    CABECALHO_VEICULOS_t *cabecalhoVeiculos = leCabecalhoVeiculos(tabelaVeiculos);
+    CABECALHO_LINHAS_t *cabecalhoLinhas = leCabecalhoLinhas(tabelaLinhas);
+
+    // Confere leitura de cabeçalhos
+    if (!cabecalhoVeiculos || !cabecalhoLinhas) {
+        fclose(tabelaVeiculos);
+        fclose(tabelaLinhas);
+        return -1;
+    }
+
+    // Confere status dos arquivos
+    if (cabecalhoVeiculos->status != '1' || cabecalhoLinhas->status != '1') {
+        fclose(tabelaVeiculos); fclose(tabelaLinhas);
+        destroiCabecalhoVeiculos(cabecalhoVeiculos);
+        destroiCabecalhoLinhas(cabecalhoLinhas);
+        return -1;
+    }
+
+    // Confere número de registros
+    if (cabecalhoVeiculos->nroRegs == 0 || cabecalhoLinhas->nroRegs == 0) {
+        fclose(tabelaVeiculos); fclose(tabelaLinhas);
+        destroiCabecalhoVeiculos(cabecalhoVeiculos);
+        destroiCabecalhoLinhas(cabecalhoLinhas);
+        return -1;
+    }
+
+    fclose(tabelaLinhas);
+    destroiCabecalhoLinhas(cabecalhoLinhas);
+
+    ARVB_t *arvLinhas = populaArvB(indiceLinha);
+    if (!arvLinhas) {
+        fclose(tabelaVeiculos);
+        destroiCabecalhoVeiculos(cabecalhoVeiculos);
+        return -1;
+    }
+
+    // Auxiliar para registro encontrado
+    char exibido = 0;
+
+    // Para cada veículo registrado
+    for (int i = 0;
+         i < cabecalhoVeiculos->nroRegs + cabecalhoVeiculos->nroRems;
+         ++i) {
+        // Lê novo objeto de veículo
+        VEICULO_t *veiculo = leVeiculo(tabelaVeiculos);
+        if (!veiculo)
+            continue;
+
+        int64_t offsetAchado = pesquisaArvB(arvLinhas, veiculo->codLinha);
+
+        if (offsetAchado < 0) {
+            destroiVeiculo(veiculo);
+            continue;
+        }
+
+        exibido = 1;
+        exibeDescreveVeiculo(cabecalhoVeiculos, veiculo);
+        exibeLinhaOffset(arqLinhas, offsetAchado);
+        printf("\n");
+
+        // Libera memória de veículo atual
+        destroiVeiculo(veiculo);
+    }
+
+    free(arvLinhas);
+
+    // Fecha arquivos em uso
+    fclose(tabelaVeiculos);
+    // Libera memória alocada
+    destroiCabecalhoVeiculos(cabecalhoVeiculos);
 
     return !exibido;
 }

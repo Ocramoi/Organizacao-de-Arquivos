@@ -632,8 +632,8 @@ CABECALHO_VEICULOS_t *leCabecalhoVeiculos(FILE *arquivo) {
         return NULL;
 
     fread(&(cabecalho->status), sizeof(char), 1, arquivo);
-    if (cabecalho->status != '1')
-        return cabecalho;
+    /* if (cabecalho->status != '1') */
+    /*     return cabecalho; */
     fread(&(cabecalho->byteOffset), sizeof(int64_t), 1, arquivo);
 
     // Lê contagem de registros

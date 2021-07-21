@@ -41,6 +41,9 @@ int insertLinha(char *nomeArq, char *registro);
 /* Libera memória de estrutura de linha lida */
 int destroiLinha (LINHA_t *linha);
 
+// Lê e exibe linha lida na [tabela] no [offset]
+int exibeLinhaOffset(char *tabela, int64_t offset);
+
 /* Exibe campos de [linha] com descrição do [cabecalho] */
 int exibeDescreveLinha(CABECALHO_LINHAS_t *cabecalho, LINHA_t *linha);
 
