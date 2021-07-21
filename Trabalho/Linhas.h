@@ -12,6 +12,17 @@ typedef struct {
     int32_t codLinha;
 } LINHA_t;
 
+typedef struct {
+    int64_t byteOffset;
+    int32_t nroRegs,
+        nroRems;
+    char status,
+        *codigo,
+        *cartao,
+        *nome,
+        *linha;
+} CABECALHO_LINHAS_t;
+
 /* "CREATE TABLE" de linhas a partir do csv de nome [entrada], salvando como o arquivo binário [saida] */
 int criaTabelaLinhas(char *entrada, char *saida);
 
@@ -27,6 +38,15 @@ int selectLinhas(char *tabela, char *campo, char *valor);
 /* "INSERT INTO Linha ..." -> Insere informações lidas em [registro] na tabela do arquivo [nomeArq] dada */
 int insertLinha(char *nomeArq, char *registro);
 
+/* Libera memória de estrutura de linha lida */
+int destroiLinha (LINHA_t *linha);
+
+/* Exibe campos de [linha] com descrição do [cabecalho] */
+int exibeDescreveLinha(CABECALHO_LINHAS_t *cabecalho, LINHA_t *linha);
+
+/* Cria e popula estrutura de linha a partir do ponteiro de arquivo dado */
+LINHA_t *leObjLinha(FILE *arq);
+
 /* "CREATE INDEX ... Linhas" -> cria arquivo índice [arvore] B a partir de arquivo de [tabela] dada */
 int criaArvoreLinhas(char *arvore, char *tabela);
 
@@ -35,5 +55,11 @@ int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao)
 
 /* "SELECT * from Linhas WHERE ..." -> Seleciona e exibe registro do arquivo binário [arqTabela] de linhas com [codLinha] dado com pesquisa na árvore [arqArvore] */
 int pesquisaLinhaArvB(char *arqTabela, char *arqArvore, int codLinha);
+
+/* Lê cabeçalho de veículos do [arquivo] dado */
+CABECALHO_LINHAS_t *leCabecalhoLinhas(FILE *arquivo);
+
+/* Libera memória de [cabecalho] de linhas lido */
+int destroiCabecalhoLinhas(CABECALHO_LINHAS_t *cabecalho);
 
 #endif // __LINHAS_H_

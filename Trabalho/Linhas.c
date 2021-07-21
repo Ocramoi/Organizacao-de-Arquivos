@@ -7,6 +7,41 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Exibe campos de [linha] com descrição do [cabecalho] */
+int exibeDescreveLinha(CABECALHO_LINHAS_t *cabecalho, LINHA_t *linha) {
+    // Confere argumentos
+    if (!cabecalho || !linha)
+        return 1;
+
+    printf("%s: %d\n", cabecalho->codigo, linha->codLinha);
+
+    printf("%s: ", cabecalho->nome);
+    if (linha->nomeLinha)
+        printf("%s\n", linha->nomeLinha);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", cabecalho->linha);
+    if (linha->corLinha)
+        printf("%s\n", linha->corLinha);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", cabecalho->cartao);
+    switch (linha->cartao) {
+        case 'S':
+            printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
+            break;
+        case 'N':
+            printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
+            break;
+        case 'F':
+            printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
+            break;
+    }
+    return 0;
+}
+
 /* Adiciona linha a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaLinha(FILE *tabela, char *registro, int64_t *offset) {
     // Trata erros de ponteiros
@@ -160,7 +195,8 @@ LINHA_t *leObjLinha(FILE *arq) {
     // Estrutura de linha
     LINHA_t *linha = malloc(sizeof(LINHA_t));
 
-    char removido; fread(&removido, sizeof(char), 1, arq);
+    char removido;
+    fread(&removido, sizeof(char), 1, arq);
     int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
     if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
         fseek(arq, offset, SEEK_CUR);
@@ -206,31 +242,22 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
     if (campo && !valor)
         return 1;
 
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arq);
-    if (status != '1') {
+    // Lê cabeçalho do arquivo
+    CABECALHO_LINHAS_t *cabecalho = leCabecalhoLinhas(arq);
+
+    // Confere status do arquivo
+    if (cabecalho->status != '1') {
         fclose(arq);
+        destroiCabecalhoLinhas(cabecalho);
         return 1;
     }
-    fseek(arq, sizeof(int64_t), SEEK_CUR);
 
-    // Lê contagem de registros
-    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
-    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
-    if (nroRegs == 0) {
+    // Confere contagem de registros
+    if (cabecalho->nroRegs == 0) {
         fclose(arq);
+        destroiCabecalhoLinhas(cabecalho);
         return -1;
     }
-
-    // Lê strings de cabeçalho
-    char *descreveCodigo = calloc(16, sizeof(char)),
-        *descreveCartao = calloc(14, sizeof(char)),
-        *descreveNome = calloc(14, sizeof(char)),
-        *descreveLinha = calloc(25, sizeof(char));
-    fread(descreveCodigo, sizeof(char), 15, arq);
-    fread(descreveCartao, sizeof(char), 13, arq);
-    fread(descreveNome, sizeof(char), 13, arq);
-    fread(descreveLinha, sizeof(char), 24, arq);
 
     // Cria valor de pesquisa a partir da string dada
     char *strTratado = NULL;
@@ -242,7 +269,7 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
 
     // Lê registro a registro contabilizando removidos
     int controleRemovidos = 0;
-    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
         // Lê novo objeto
         LINHA_t *atual = leObjLinha(arq);
 
@@ -272,47 +299,22 @@ int selectLinhas(char *tabela, char *campo, char *valor) {
             }
         }
 
-        // Exibe informações no formato indicado
-        printf("%s: %d\n", descreveCodigo, atual->codLinha);
-
-        printf("%s: ", descreveNome);
-        if (atual->nomeLinha)
-            printf("%s\n", atual->nomeLinha);
-        else
-            printf("campo com valor nulo\n");
-
-        printf("%s: ", descreveLinha);
-        if (atual->corLinha)
-            printf("%s\n", atual->corLinha);
-        else
-            printf("campo com valor nulo\n");
-
-        printf("%s: ", descreveCartao);
-        switch (atual->cartao) {
-            case 'S':
-                printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
-                break;
-            case 'N':
-                printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
-                break;
-            case 'F':
-                printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
-                break;
-        }
-        printf("\n");
+        // Exibe registro com descrição do cabeçalho
+        exibeDescreveLinha(cabecalho, atual);
 
         // Libera registro criado anteriormente
         destroiLinha(atual);
     }
 
-    // Libera memória alocada
-    free(descreveCodigo); free(descreveCartao); free(descreveNome); free(descreveLinha);
     // Fecha arquivo da tabela
     fclose(arq);
 
     // Confere se número de registros removidos correto
-    if (controleRemovidos != nroRemvs)
+    if (controleRemovidos != cabecalho->nroRems)
         return 1;
+
+    // Libera memória alocada
+    destroiCabecalhoLinhas(cabecalho);
 
     return 0;
 }
@@ -459,64 +461,29 @@ int exibeLinhaOffset(char *tabela, int64_t offset) {
 
     // Lê cabeçalho de arquivo
     fseek(arq, 0, SEEK_SET);
+    CABECALHO_LINHAS_t *cabecalho = leCabecalhoLinhas(arq);
 
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arq);
-    if (status != '1') {
+    // Confere status do arquivo
+    if (cabecalho->status != '1') {
         fclose(arq);
+        destroiCabecalhoLinhas(cabecalho);
+        destroiLinha(tempLinha);
         return 1;
     }
-    fseek(arq, sizeof(int64_t), SEEK_CUR);
 
-    // Lê contagem de registros
-    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
-    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
-    if (nroRegs == 0) {
+    // Confere contagem de registros
+    if (cabecalho->nroRegs == 0) {
         fclose(arq);
+        destroiCabecalhoLinhas(cabecalho);
+        destroiLinha(tempLinha);
         return -1;
     }
 
-    // Lê strings de cabeçalho
-    char *descreveCodigo = calloc(16, sizeof(char)),
-        *descreveCartao = calloc(14, sizeof(char)),
-        *descreveNome = calloc(14, sizeof(char)),
-        *descreveLinha = calloc(25, sizeof(char));
-    fread(descreveCodigo, sizeof(char), 15, arq);
-    fread(descreveCartao, sizeof(char), 13, arq);
-    fread(descreveNome, sizeof(char), 13, arq);
-    fread(descreveLinha, sizeof(char), 24, arq);
-
-    // Exibe informações no formato indicado
-    printf("%s: %d\n", descreveCodigo, tempLinha->codLinha);
-
-    printf("%s: ", descreveNome);
-    if (tempLinha->nomeLinha)
-        printf("%s\n", tempLinha->nomeLinha);
-    else
-        printf("campo com valor nulo\n");
-
-    printf("%s: ", descreveLinha);
-    if (tempLinha->corLinha)
-        printf("%s\n", tempLinha->corLinha);
-    else
-        printf("campo com valor nulo\n");
-
-    printf("%s: ", descreveCartao);
-    switch (tempLinha->cartao) {
-        case 'S':
-            printf("PAGAMENTO SOMENTE COM CARTAO SEM PRESENCA DE COBRADOR\n");
-            break;
-        case 'N':
-            printf("PAGAMENTO EM CARTAO E DINHEIRO\n");
-            break;
-        case 'F':
-            printf("PAGAMENTO EM CARTAO SOMENTE NO FINAL DE SEMANA\n");
-            break;
-    }
-    printf("\n");
+    // Exibe registro com descrição do cabeçalho
+    exibeDescreveLinha(cabecalho, tempLinha);
 
     // Libera memória alocada
-    free(descreveCodigo); free(descreveCartao); free(descreveNome); free(descreveLinha);
+    destroiCabecalhoLinhas(cabecalho);
     // Fecha arquivo da tabela
     fclose(arq);
     // Libera registro criado anteriormente
@@ -559,19 +526,19 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
     if (!tabela || !arqTabela)
         return 1;
 
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arqTabela);
-    if (status != '1') {
+    // Lê cabeçalho do arquivo
+    CABECALHO_LINHAS_t *cabecalho = leCabecalhoLinhas(arqTabela);
+
+    if (cabecalho->status != '1') {
         fclose(arqTabela);
+        destroiCabecalhoLinhas(cabecalho);
         return 1;
     }
-    fseek(arqTabela, sizeof(int64_t), SEEK_CUR);
 
     // Lê contagem de registros
-    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arqTabela);
-    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arqTabela);
-    if (nroRegs == 0) {
+    if (cabecalho->nroRegs == 0) {
         fclose(arqTabela);
+        destroiCabecalhoLinhas(cabecalho);
         return -1;
     }
     fseek(arqTabela, 82, SEEK_SET);
@@ -583,7 +550,7 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
     int ret;
 
     // Para cada registro
-    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
         // Salva offset para adição na árvore
         int64_t offsetAtual = ftell(arqTabela);
 
@@ -606,6 +573,8 @@ int criaArvoreLinhas(char *tabela, char *arvore) {
 
     // Libera memória alocada
     free(arvoreLinhas); fclose(arqTabela);
+    destroiCabecalhoLinhas(cabecalho);
+
     return ret;
 }
 
@@ -629,4 +598,47 @@ int adicionaLinhaArvore(char *arqArvore, char *registro, int64_t offsetInsercao)
     free(arvore); destroiLinha(tempLinha);
 
     return ret;
+}
+
+/* Lê cabeçalho de veículos do arquivo [arq] dado */
+CABECALHO_LINHAS_t *leCabecalhoLinhas(FILE *arq) {
+    CABECALHO_LINHAS_t *cabecalho = malloc(sizeof(CABECALHO_LINHAS_t));
+
+    // Lê e confere status do arquivo
+    fread(&(cabecalho->status), sizeof(char), 1, arq);
+    if (cabecalho->status != '1')
+        return cabecalho;
+    fread(&(cabecalho->byteOffset), sizeof(int64_t), 1, arq);
+
+    // Lê contagem de registros
+    fread(&(cabecalho->nroRegs), sizeof(int32_t), 1, arq);
+    fread(&(cabecalho->nroRems), sizeof(int32_t), 1, arq);
+
+    // Lê strings de cabeçalho
+    cabecalho->codigo = calloc(16, sizeof(char)),
+    fread(cabecalho->codigo, sizeof(char), 15, arq);
+
+    cabecalho->cartao = calloc(14, sizeof(char)),
+    fread(cabecalho->cartao, sizeof(char), 13, arq);
+
+    cabecalho->nome = calloc(14, sizeof(char)),
+    fread(cabecalho->nome, sizeof(char), 13, arq);
+
+    cabecalho->linha = calloc(25, sizeof(char));
+    fread(cabecalho->linha, sizeof(char), 24, arq);
+
+    return cabecalho;
+}
+
+/* Libera memória de [cabecalho] de linhas lido */
+int destroiCabecalhoLinhas(CABECALHO_LINHAS_t *cabecalho) {
+    if (!cabecalho)
+        return 1;
+
+    free(cabecalho->codigo);
+    free(cabecalho->cartao);
+    free(cabecalho->linha);
+    free(cabecalho->nome);
+    free(cabecalho);
+    return 0;
 }

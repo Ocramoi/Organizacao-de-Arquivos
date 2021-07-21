@@ -8,6 +8,42 @@
 #include <stdlib.h>
 #include <string.h>
 
+/* Exibe campos de [veiculo] com descrição do [cabecalho] */
+int exibeDescreveVeiculo(CABECALHO_VEICULOS_t *cabecalho, VEICULO_t *veiculo) {
+    // Confere argumentos
+    if (!cabecalho || !veiculo)
+        return 1;
+
+    // Exibe informações no formato indicado
+    printf("%s: %s\n", cabecalho->prefixo, veiculo->prefixo);
+
+    printf("%s: ", cabecalho->modelo);
+    if (veiculo->modelo)
+        printf("%s\n", veiculo->modelo);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", cabecalho->categoria);
+    if (veiculo->categoria)
+        printf("%s\n", veiculo->categoria);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", cabecalho->data);
+    if (veiculo->data)
+        printf("%s\n", veiculo->data);
+    else
+        printf("campo com valor nulo\n");
+
+    printf("%s: ", cabecalho->lugares);
+    if (veiculo->quantidadeLugares != -1)
+        printf("%d\n", veiculo->quantidadeLugares);
+    else
+        printf("campo com valor nulo\n");
+
+    return 0;
+}
+
 /* Adiciona veículo a partir de [tempRegistro] ao arquivo [tabela] já criado */
 int adicionaVeiculoARQ(FILE *tabela, char *registro, int64_t *offset) {
     // Trata erro de ponteiros
@@ -180,9 +216,9 @@ VEICULO_t *leVeiculo(FILE *arq) {
     VEICULO_t *veiculo = malloc(sizeof(VEICULO_t));
 
     // Lê informações iniciais e trata se removido
-    char removido; fread(&removido, sizeof(char), 1, arq);
+    fread(&(veiculo->removido), sizeof(char), 1, arq);
     int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
-    if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+    if (veiculo->removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
         fseek(arq, offset, SEEK_CUR);
         free(veiculo);
         return NULL;
@@ -229,35 +265,22 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
     if (campo && !valor)
         return 1;
 
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arq);
-    if (status != '1') {
+    // Lê cabeçalho do arquivo
+    CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(arq);
+
+    // Confere status do arquivo
+    if (cabecalho->status != '1') {
+        destroiCabecalhoVeiculos(cabecalho);
         fclose(arq);
         return 1;
     }
-    fseek(arq, sizeof(int64_t), SEEK_CUR);
 
-    // Lê contagem de registros
-    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
-    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
-    if (nroRegs == 0) {
+    // Confere número de registros
+    if (cabecalho->nroRegs == 0) {
+        destroiCabecalhoVeiculos(cabecalho);
         fclose(arq);
         return -1;
     }
-
-    // Lê strings de cabeçalho
-    char *prefixo = calloc(19, sizeof(char)),
-        *data = calloc(36, sizeof(char)),
-        *lugares = calloc(43, sizeof(char)),
-        *linha = calloc(27, sizeof(char)),
-        *modelo = calloc(18, sizeof(char)),
-        *categoria = calloc(21, sizeof(char));
-    fread(prefixo, sizeof(char), 18, arq);
-    fread(data, sizeof(char), 35, arq);
-    fread(lugares, sizeof(char), 42, arq);
-    fread(linha, sizeof(char), 26, arq);
-    fread(modelo, sizeof(char), 17, arq);
-    fread(categoria, sizeof(char), 20, arq);
 
     // Cria valor de pesquisa a partir da string dada
     char *strTratado = NULL;
@@ -269,7 +292,7 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
 
     // Lê registro a registro contabilizando removidos
     int32_t controleRemovidos = 0;
-    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
         // Lê novo objeto
         VEICULO_t *atual = leVeiculo(arq);
 
@@ -303,46 +326,22 @@ int selectVeiculos(char *tabela, char *campo, char *valor) {
             }
         }
 
-        // Exibe informações no formato indicado
-        printf("%s: %s\n", prefixo, atual->prefixo);
-
-        printf("%s: ", modelo);
-        if (atual->modelo)
-            printf("%s\n", atual->modelo);
-        else
-            printf("campo com valor nulo\n");
-
-        printf("%s: ", categoria);
-        if (atual->categoria)
-            printf("%s\n", atual->categoria);
-        else
-            printf("campo com valor nulo\n");
-
-        printf("%s: ", data);
-        if (atual->data)
-            printf("%s\n", atual->data);
-        else
-            printf("campo com valor nulo\n");
-
-        printf("%s: ", lugares);
-        if (atual->quantidadeLugares != -1)
-            printf("%d\n", atual->quantidadeLugares);
-        else
-            printf("campo com valor nulo\n");
-        printf("\n");
+        // Exibe veículo compatível
+        exibeDescreveVeiculo(cabecalho, atual);
 
         // Libera registro criado anteriormente
         destroiVeiculo(atual);
     }
 
-    // Libera memória alocada
-    free(prefixo); free(data); free(lugares); free(linha); free(modelo); free(categoria);
     // Fecha arquivo da tabela
     fclose(arq);
 
     // Confere se número de registros removidos correto
-    if (controleRemovidos != nroRemvs)
+    if (controleRemovidos != cabecalho->nroRems)
         return 1;
+
+    // Libera memória alocada
+    destroiCabecalhoVeiculos(cabecalho);
 
     return 0;
 }
@@ -432,9 +431,10 @@ int insertVeiculo(char *nomeArq, char *registro) {
     // Altera o status do arquivo para em uso [0] 
     fseek(tabela, 0, SEEK_SET);
     fwrite("0", sizeof(char), 1, tabela);
-    // Busca os campos armazenados no cabeçalho do arquivo [nomeArq] byte offset [offset] e numeros de registros [numReg]
-    int64_t offset; fread(&offset, sizeof(int64_t), 1, tabela);
-    int32_t numReg; fread(&numReg, sizeof(int32_t), 1, tabela);
+    fseek(tabela, 0, SEEK_SET);
+
+    // Lê cabeçalho do arquivo [nomeArq]
+    CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(tabela);
 
     VEICULO_t *tempVeiculo = regParaVeiculo(registro);
 
@@ -460,11 +460,11 @@ int insertVeiculo(char *nomeArq, char *registro) {
     fwrite(tempVeiculo->categoria, sizeof(char), tamCategoria, tabela);
 
     // Atualização do número de registros [numReg], byte offset [offset]
-    int64_t proxReg = offset + tam + 5;
-    numReg++;
+    int64_t proxReg = cabecalho->byteOffset + tam + 5;
+    cabecalho->nroRegs++;
     fseek(tabela, 1, SEEK_SET);
     fwrite(&proxReg, sizeof(int64_t), 1, tabela);
-    fwrite(&numReg, sizeof(int32_t), 1, tabela);
+    fwrite(&(cabecalho->nroRegs), sizeof(int32_t), 1, tabela);
 
     // Atualização do status do arquivo [nomeArq]
     fseek(tabela, 0, SEEK_SET);
@@ -472,6 +472,7 @@ int insertVeiculo(char *nomeArq, char *registro) {
 
     // Libera memória alocada
     destroiVeiculo(tempVeiculo);
+    destroiCabecalhoVeiculos(cabecalho);
 
     // Fecha o arquivo
     fclose(tabela);
@@ -491,69 +492,29 @@ int exibeVeiculoOffset(char *tabela, int64_t offset) {
 
     // Lê cabeçalho de arquivo
     fseek(arq, 0, SEEK_SET);
+    CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(arq);
 
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arq);
-    if (status != '1') {
+    // Confere status do arquivo
+    if (cabecalho->status != '1') {
         fclose(arq);
+        destroiCabecalhoVeiculos(cabecalho);
         return 1;
     }
-    fseek(arq, sizeof(int64_t), SEEK_CUR);
 
-    // Lê contagem de registros
-    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arq);
-    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arq);
-    if (nroRegs == 0) {
+    // Confere número de registros
+    if (cabecalho->nroRegs == 0) {
         fclose(arq);
+        destroiCabecalhoVeiculos(cabecalho);
         return -1;
     }
 
-    // Lê strings de cabeçalho
-    char *prefixo = calloc(19, sizeof(char)),
-        *data = calloc(36, sizeof(char)),
-        *lugares = calloc(43, sizeof(char)),
-        *linha = calloc(27, sizeof(char)),
-        *modelo = calloc(18, sizeof(char)),
-        *categoria = calloc(21, sizeof(char));
-    fread(prefixo, sizeof(char), 18, arq);
-    fread(data, sizeof(char), 35, arq);
-    fread(lugares, sizeof(char), 42, arq);
-    fread(linha, sizeof(char), 26, arq);
-    fread(modelo, sizeof(char), 17, arq);
-    fread(categoria, sizeof(char), 20, arq);
-
-    // Exibe informações no formato indicado
-    printf("%s: %s\n", prefixo, tempVeiculo->prefixo);
-
-    printf("%s: ", modelo);
-    if (tempVeiculo->modelo)
-        printf("%s\n", tempVeiculo->modelo);
-    else
-        printf("campo com valor nulo\n");
-
-    printf("%s: ", categoria);
-    if (tempVeiculo->categoria)
-        printf("%s\n", tempVeiculo->categoria);
-    else
-        printf("campo com valor nulo\n");
-
-    printf("%s: ", data);
-    if (tempVeiculo->data)
-        printf("%s\n", tempVeiculo->data);
-    else
-        printf("campo com valor nulo\n");
-
-    printf("%s: ", lugares);
-    if (tempVeiculo->quantidadeLugares != -1)
-        printf("%d\n", tempVeiculo->quantidadeLugares);
-    else
-        printf("campo com valor nulo\n");
-    printf("\n");
+    // Exibe veículo com descrição do cabecalho
+    exibeDescreveVeiculo(cabecalho, tempVeiculo);
 
     destroiVeiculo(tempVeiculo);
 
     // Libera memória alocada
-    free(prefixo); free(data); free(lugares); free(linha); free(modelo); free(categoria);
+    destroiCabecalhoVeiculos(cabecalho);
     fclose(arq);
     return 0;
 }
@@ -593,22 +554,22 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     if (!tabela || !arqTabela)
         return 1;
 
-    // Lê e confere status do arquivo
-    char status; fread(&status, sizeof(char), 1, arqTabela);
-    if (status != '1') {
+    // Lê cabeçalho do arquivo
+    CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(arqTabela);
+
+    // Confere status do arquivo
+    if (cabecalho->status != '1') {
         fclose(arqTabela);
+        destroiCabecalhoVeiculos(cabecalho);
         return 1;
     }
-    fseek(arqTabela, sizeof(int64_t), SEEK_CUR);
 
     // Lê contagem de registros
-    int32_t nroRegs; fread(&nroRegs, sizeof(int32_t), 1, arqTabela);
-    int32_t nroRemvs; fread(&nroRemvs, sizeof(int32_t), 1, arqTabela);
-    if (nroRegs == 0) {
+    if (cabecalho->nroRegs == 0) {
         fclose(arqTabela);
+        destroiCabecalhoVeiculos(cabecalho);
         return -1;
     }
-    fseek(arqTabela, 174, SEEK_SET);
 
     // Cria e popula árvore
     ARVB_t *arvoreVeiculos = populaArvB(arvore);
@@ -617,7 +578,7 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     int ret;
 
     // Para cada registro
-    for (int i = 0; i < nroRegs + nroRemvs; ++i) {
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
         // Salva offset para adição na árvore
         int64_t offsetAtual = ftell(arqTabela);
 
@@ -638,6 +599,7 @@ int criaArvoreVeiculos(char *tabela, char *arvore) {
     }
 
     // Libera memória alocada
+    destroiCabecalhoVeiculos(cabecalho);
     fclose(arqTabela); free(arvoreVeiculos);
     return ret;
 }
@@ -661,4 +623,56 @@ int adicionaVeiculoArvore(char *arqArvore, char *registro, int64_t offsetInserca
     free(arvore); destroiVeiculo(tempVeiculo);
 
     return ret;
+}
+
+/* Lê cabeçalho de veículos do [arquivo] dado */
+CABECALHO_VEICULOS_t *leCabecalhoVeiculos(FILE *arquivo) {
+    CABECALHO_VEICULOS_t *cabecalho = malloc(sizeof(CABECALHO_VEICULOS_t));
+    if (!cabecalho)
+        return NULL;
+
+    fread(&(cabecalho->status), sizeof(char), 1, arquivo);
+    if (cabecalho->status != '1')
+        return cabecalho;
+    fread(&(cabecalho->byteOffset), sizeof(int64_t), 1, arquivo);
+
+    // Lê contagem de registros
+    fread(&(cabecalho->nroRegs), sizeof(int32_t), 1, arquivo);
+    fread(&(cabecalho->nroRems), sizeof(int32_t), 1, arquivo);
+
+    // Lê strings de cabeçalho de veículos
+    cabecalho->prefixo = calloc(19, sizeof(char));
+    fread(cabecalho->prefixo, sizeof(char), 18, arquivo);
+
+    cabecalho->data = calloc(36, sizeof(char));
+    fread(cabecalho->data, sizeof(char), 35, arquivo);
+
+    cabecalho->lugares = calloc(43, sizeof(char));
+    fread(cabecalho->lugares, sizeof(char), 42, arquivo);
+
+    cabecalho->linha = calloc(27, sizeof(char));
+    fread(cabecalho->linha, sizeof(char), 26, arquivo);
+
+    cabecalho->modelo = calloc(18, sizeof(char));
+    fread(cabecalho->modelo, sizeof(char), 17, arquivo);
+
+    cabecalho->categoria = calloc(21, sizeof(char));
+    fread(cabecalho->categoria, sizeof(char), 20, arquivo);
+
+    return cabecalho;
+}
+
+/* Libera memória de [cabecalho] de veículos lido */
+int destroiCabecalhoVeiculos(CABECALHO_VEICULOS_t *cabecalho) {
+    if (!cabecalho)
+        return 1;
+
+    free(cabecalho->categoria);
+    free(cabecalho->data);
+    free(cabecalho->linha);
+    free(cabecalho->lugares);
+    free(cabecalho->modelo);
+    free(cabecalho->prefixo);
+    free(cabecalho);
+    return 0;
 }

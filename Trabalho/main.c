@@ -16,6 +16,7 @@
 #include "LeLinha.h"
 #include "Veiculos.h"
 #include "Linhas.h"
+#include "Join.h"
 
 int main(int argc, char **argv) {
     // Lê opção, chamando então função desejada
@@ -318,6 +319,16 @@ int main(int argc, char **argv) {
             int num,
                 ret;
             sscanf(entrada, "%d %s %s %s %s", &opcao, arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+            ret = selectJoinVeiculosLinhas(arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+            switch (ret) {
+                case -1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                case 1:
+                    printf("Registro inexistente.\n");
+                    break;
+            }
+            break;
         }
         default:
             printf("Opção digitada inválida!\n");
