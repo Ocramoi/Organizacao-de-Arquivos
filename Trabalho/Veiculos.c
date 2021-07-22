@@ -680,6 +680,25 @@ RetornaChave_f retornaCodVeiculo(void *veiculo) {
     return obj->codLinha + 1;
 }
 
+/* Lê e retorna lista de veículos do [arquivo] a partir do cursor, com base nas informações do [cabecalho],
+ * registrando as informações para [tamLista] e [byteOffset] */
+VEICULO_t **leListaVeiculos(FILE *arquivo,
+                            CABECALHO_VEICULOS_t *cabecalho,
+                            int *tamLista, int64_t *byteOffset) {
+
+    VEICULO_t **veiculos = malloc(cabecalho->nroRegs * sizeof(VEICULO_t*));
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
+        VEICULO_t *veiculo = leVeiculo(arquivo);
+        if (!veiculo)
+            continue;
+
+        veiculos[(*tamLista)++] = veiculo;
+        *byteOffset += veiculo->tamRegistro + 5;
+    }
+
+    return veiculos;
+}
+
 /* Ordena veículos do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
 int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     if (!arqEntrada || !arqSaida || !campoOrdenacao)
@@ -702,17 +721,10 @@ int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     }
 
     int contVeiculos = 0;
-    VEICULO_t **veiculos = malloc(cabecalho->nroRegs * sizeof(VEICULO_t*));
-
     int64_t byteOffset = 175;
-    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
-        VEICULO_t *veiculo = leVeiculo(tabelaVeiculos);
-        if (!veiculo)
-            continue;
 
-        veiculos[contVeiculos++] = veiculo;
-        byteOffset += veiculo->tamRegistro + 5;
-    }
+    VEICULO_t **veiculos = leListaVeiculos(tabelaVeiculos, cabecalho, &contVeiculos, &byteOffset);
+    fclose(tabelaVeiculos);
 
     radixSort((void**) veiculos, sizeof(int32_t), contVeiculos, &retornaCodVeiculo);
 
@@ -750,7 +762,7 @@ int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     fseek(tabelaOrdenada, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, tabelaOrdenada);
 
-    fclose(tabelaVeiculos); fclose(tabelaOrdenada);
+    fclose(tabelaOrdenada);
     destroiCabecalhoVeiculos(cabecalho);
 
     return 0;

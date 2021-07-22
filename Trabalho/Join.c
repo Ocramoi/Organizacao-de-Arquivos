@@ -175,3 +175,70 @@ int selectJoinVeiculosLinhasArvB(char *arqVeiculos, char *arqLinhas,
 
     return !exibido;
 }
+
+/* Realiza a ordenação e merge dos registros de veículos em [arqVeiculos] e linhas em [arqLinhas] com base no código de linha */
+int ordMerge(char *arqVeiculos, char *arqLinhas, char *campoVeiculos, char *campoLinha) {
+    int aux = ordenaVeiculos(arqVeiculos, arqVeiculos, "codLinha");
+    aux ^= ordenaLinhas(arqLinhas, arqLinhas, "codLinha");
+    if (aux)
+        return -1;
+
+    FILE *tabelaVeiculos = fopen(arqVeiculos, "rb"),
+        *tabelaLinhas = fopen(arqLinhas, "rb");
+
+    CABECALHO_VEICULOS_t *cabecalhoVeiculos = leCabecalhoVeiculos(tabelaVeiculos);
+    CABECALHO_LINHAS_t *cabecalhoLinhas = leCabecalhoLinhas(tabelaLinhas);
+
+    int idxVeiculos = 0,
+        idxLinhas = 0;
+
+    VEICULO_t *veiculo = leVeiculo(tabelaVeiculos);
+    LINHA_t *linha = leObjLinha(tabelaLinhas);
+
+    char exibido = 0;
+    while (idxVeiculos < cabecalhoVeiculos->nroRegs &&
+           idxLinhas < cabecalhoLinhas->nroRegs) {
+        if (veiculo->codLinha == linha->codLinha) {
+            exibido = 1;
+            exibeDescreveVeiculo(cabecalhoVeiculos, veiculo);
+            exibeDescreveLinha(cabecalhoLinhas, linha);
+            printf("\n");
+
+            idxVeiculos++;
+
+            destroiVeiculo(veiculo);
+            veiculo = NULL;
+            if (idxVeiculos < cabecalhoVeiculos->nroRegs)
+                veiculo = leVeiculo(tabelaVeiculos);
+            continue;
+        }
+
+        if (veiculo->codLinha > linha->codLinha) {
+            idxLinhas++;
+            destroiLinha(linha);
+            linha = NULL;
+            if (idxLinhas < cabecalhoLinhas->nroRegs)
+                linha = leObjLinha(tabelaLinhas);
+            continue;
+        }
+
+        if (veiculo->codLinha < linha->codLinha) {
+            idxVeiculos++;
+            destroiVeiculo(veiculo);
+            veiculo = NULL;
+            if (idxVeiculos < cabecalhoVeiculos->nroRegs)
+                veiculo = leVeiculo(tabelaVeiculos);
+            continue;
+        }
+    }
+
+    if (linha)
+        destroiLinha(linha);
+    if (veiculo)
+        destroiVeiculo(veiculo);
+
+    destroiCabecalhoLinhas(cabecalhoLinhas); destroiCabecalhoVeiculos(cabecalhoVeiculos);
+    fclose(tabelaLinhas); fclose(tabelaVeiculos);
+
+    return !exibido;
+}

@@ -648,6 +648,25 @@ RetornaChave_f retornaCodLinha(void *linha) {
     return obj->codLinha + 1;
 }
 
+/* Lê e retorna lista de linhas do [arquivo] a partir do cursor, com base nas informações do [cabecalho],
+ * registrando as informações para [tamLista] e [byteOffset] */
+LINHA_t **leListaLinhas(FILE *arquivo,
+                        CABECALHO_LINHAS_t *cabecalho,
+                        int *tamLista, int64_t *byteOffset) {
+    LINHA_t **linhas = malloc(cabecalho->nroRegs * sizeof(LINHA_t*));
+
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
+        LINHA_t *linha = leObjLinha(arquivo);
+        if (!linha)
+            continue;
+
+        linhas[(*tamLista)++] = linha;
+        *byteOffset += linha->tamRegistro + 5;
+    }
+
+    return linhas;
+}
+
 /* Ordena linhas do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
 int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     if (!arqEntrada || !arqSaida || !campoOrdenacao)
@@ -670,17 +689,10 @@ int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     }
 
     int contLinhas = 0;
-    LINHA_t **linhas = malloc(cabecalho->nroRegs * sizeof(LINHA_t*));
-
     int64_t byteOffset = 82;
-    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
-        LINHA_t *linha = leObjLinha(tabelaLinhas);
-        if (!linha)
-            continue;
 
-        linhas[contLinhas++] = linha;
-        byteOffset += linha->tamRegistro + 5;
-    }
+    LINHA_t **linhas = leListaLinhas(tabelaLinhas, cabecalho, &contLinhas, &byteOffset);
+    fclose(tabelaLinhas);
 
     radixSort((void**) linhas, sizeof(int32_t), contLinhas, &retornaCodLinha);
 
@@ -715,7 +727,7 @@ int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     fseek(tabelaOrdenada, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, tabelaOrdenada);
 
-    fclose(tabelaLinhas); fclose(tabelaOrdenada);
+    fclose(tabelaOrdenada);
     destroiCabecalhoLinhas(cabecalho);
 
     return 0;

@@ -381,6 +381,25 @@ int main(int argc, char **argv) {
                 FF_binarioNaTela(arqSaida);
             break;
         }
+        case 19: {
+            // Lê entrada
+            char arqVeiculos[100],
+                arqLinhas[100],
+                campoVeiculo[100],
+                campoLinha[100];
+            int ret;
+            sscanf(entrada, "%d %s %s %s %s", &opcao, arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+            ret = ordMerge(arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+            switch (ret) {
+                case -1:
+                    printf("Falha no processamento do arquivo.\n");
+                    break;
+                case 1:
+                    printf("Registro inexistente.\n");
+                    break;
+            }
+            break;
+        }
         default:
             printf("Opção digitada inválida!\n");
             break;
