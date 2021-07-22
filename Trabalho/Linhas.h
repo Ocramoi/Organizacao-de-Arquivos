@@ -9,7 +9,8 @@ typedef struct {
         cartao,
         *nomeLinha,
         *corLinha;
-    int32_t codLinha;
+    int32_t codLinha,
+        tamRegistro;
 } LINHA_t;
 
 typedef struct {
@@ -64,5 +65,8 @@ CABECALHO_LINHAS_t *leCabecalhoLinhas(FILE *arquivo);
 
 /* Libera memória de [cabecalho] de linhas lido */
 int destroiCabecalhoLinhas(CABECALHO_LINHAS_t *cabecalho);
+
+/* Ordena linhas do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
+int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao);
 
 #endif // __LINHAS_H_

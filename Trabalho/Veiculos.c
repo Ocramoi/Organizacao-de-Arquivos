@@ -3,6 +3,7 @@
 #include "TratamentoDeValores.h"
 #include "convertePrefixo.h"
 #include "ArvoreB.h"
+#include "RadixSort.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -217,17 +218,17 @@ VEICULO_t *leVeiculo(FILE *arq) {
 
     // Lê informações iniciais e trata se removido
     fread(&(veiculo->removido), sizeof(char), 1, arq);
-    int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
+    fread(&(veiculo->tamRegistro), sizeof(int32_t), 1, arq);
     if (veiculo->removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
-        fseek(arq, offset, SEEK_CUR);
+        fseek(arq, veiculo->tamRegistro, SEEK_CUR);
         free(veiculo);
         return NULL;
     }
 
     // Lê valores brutos do registro e os formata
     fread(veiculo->prefixo, sizeof(char), 5, arq); veiculo->prefixo[5] = '\0';
-    char curData[11]; fread(curData, sizeof(char), 10, arq); curData[10] = '\0';
-    veiculo->data = trataData(curData);
+    fread(veiculo->dataOriginal, sizeof(char), 10, arq); veiculo->dataOriginal[10] = '\0';
+    veiculo->data = trataData(veiculo->dataOriginal);
     fread(&(veiculo->quantidadeLugares), sizeof(int32_t), 1, arq);
     fread(&(veiculo->codLinha), sizeof(int32_t), 1, arq);
 
@@ -431,9 +432,9 @@ int insertVeiculo(char *nomeArq, char *registro) {
     // Altera o status do arquivo para em uso [0] 
     fseek(tabela, 0, SEEK_SET);
     fwrite("0", sizeof(char), 1, tabela);
-    fseek(tabela, 0, SEEK_SET);
 
     // Lê cabeçalho do arquivo [nomeArq]
+    fseek(tabela, 0, SEEK_SET);
     CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(tabela);
 
     VEICULO_t *tempVeiculo = regParaVeiculo(registro);
@@ -459,16 +460,13 @@ int insertVeiculo(char *nomeArq, char *registro) {
     fwrite(&tamCategoria, sizeof(int32_t), 1, tabela);
     fwrite(tempVeiculo->categoria, sizeof(char), tamCategoria, tabela);
 
-    // Atualização do número de registros [numReg], byte offset [offset]
+    // Atualização do número de registros [numReg], byte offset [offset] e status
     int64_t proxReg = cabecalho->byteOffset + tam + 5;
     cabecalho->nroRegs++;
-    fseek(tabela, 1, SEEK_SET);
-    fwrite(&proxReg, sizeof(int64_t), 1, tabela);
-    fwrite(&(cabecalho->nroRegs), sizeof(int32_t), 1, tabela);
-
-    // Atualização do status do arquivo [nomeArq]
     fseek(tabela, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, tabela);
+    fwrite(&proxReg, sizeof(int64_t), 1, tabela);
+    fwrite(&(cabecalho->nroRegs), sizeof(int32_t), 1, tabela);
 
     // Libera memória alocada
     destroiVeiculo(tempVeiculo);
@@ -674,5 +672,86 @@ int destroiCabecalhoVeiculos(CABECALHO_VEICULOS_t *cabecalho) {
     free(cabecalho->modelo);
     free(cabecalho->prefixo);
     free(cabecalho);
+    return 0;
+}
+
+RetornaChave_f retornaCodVeiculo(void *veiculo) {
+    VEICULO_t *obj = (VEICULO_t *) veiculo;
+    return obj->codLinha + 1;
+}
+
+/* Ordena veículos do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
+int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
+    if (!arqEntrada || !arqSaida || !campoOrdenacao)
+        return 1;
+
+    FILE *tabelaVeiculos = fopen(arqEntrada, "rb");
+    if (!tabelaVeiculos)
+        return 1;
+
+    CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(tabelaVeiculos);
+    if (!cabecalho) {
+        fclose(tabelaVeiculos);
+        return 1;
+    }
+
+    if (cabecalho->status != '1') {
+        fclose(tabelaVeiculos);
+        destroiCabecalhoVeiculos(cabecalho);
+        return 1;
+    }
+
+    int contVeiculos = 0;
+    VEICULO_t **veiculos = malloc(cabecalho->nroRegs * sizeof(VEICULO_t*));
+
+    int64_t byteOffset = 175;
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
+        VEICULO_t *veiculo = leVeiculo(tabelaVeiculos);
+        if (!veiculo)
+            continue;
+
+        veiculos[contVeiculos++] = veiculo;
+        byteOffset += veiculo->tamRegistro + 5;
+    }
+
+    radixSort((void**) veiculos, sizeof(int32_t), contVeiculos, &retornaCodVeiculo);
+
+    FILE *tabelaOrdenada = fopen(arqSaida, "wb+");
+
+    // Inicializa cabeçalho
+    int32_t nRems = 0;
+    fwrite("0", sizeof(char), 1, tabelaOrdenada);
+    fwrite(&byteOffset, sizeof(int64_t), 1, tabelaOrdenada);
+    fwrite(&contVeiculos, sizeof(int32_t), 1, tabelaOrdenada);
+    fwrite(&nRems, sizeof(int32_t), 1, tabelaOrdenada);
+    fwrite(cabecalho->prefixo, sizeof(char), 18, tabelaOrdenada);
+    fwrite(cabecalho->data, sizeof(char), 35, tabelaOrdenada);
+    fwrite(cabecalho->lugares, sizeof(char), 42, tabelaOrdenada);
+    fwrite(cabecalho->linha, sizeof(char), 26, tabelaOrdenada);
+    fwrite(cabecalho->modelo, sizeof(char), 17, tabelaOrdenada);
+    fwrite(cabecalho->categoria, sizeof(char), 20, tabelaOrdenada);
+
+    for (int i = 0; i < contVeiculos; ++i) {
+        fwrite(&(veiculos[i]->removido), sizeof(char), 1, tabelaOrdenada);
+        fwrite(&(veiculos[i]->tamRegistro), sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(veiculos[i]->prefixo, sizeof(char), 5, tabelaOrdenada);
+        fwrite(veiculos[i]->dataOriginal, sizeof(char), 10, tabelaOrdenada);
+        fwrite(&(veiculos[i]->quantidadeLugares), sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(&(veiculos[i]->codLinha), sizeof(int32_t), 1, tabelaOrdenada);
+        int32_t tamModelo = veiculos[i]->modelo ? strlen(veiculos[i]->modelo) : 0,
+            tamCategoria = veiculos[i]->categoria ? strlen(veiculos[i]->categoria) : 0;
+        fwrite(&tamModelo, sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(veiculos[i]->modelo, sizeof(char), tamModelo, tabelaOrdenada);
+        fwrite(&tamCategoria, sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(veiculos[i]->categoria, sizeof(char), tamCategoria, tabelaOrdenada);
+        destroiVeiculo(veiculos[i]);
+    } free(veiculos);
+
+    fseek(tabelaOrdenada, 0, SEEK_SET);
+    fwrite("1", sizeof(char), 1, tabelaOrdenada);
+
+    fclose(tabelaVeiculos); fclose(tabelaOrdenada);
+    destroiCabecalhoVeiculos(cabecalho);
+
     return 0;
 }

@@ -351,6 +351,36 @@ int main(int argc, char **argv) {
             }
             break;
         }
+        case 17: {
+            // Lê entrada
+            char arqEntrada[100],
+                arqSaida[100],
+                campoOrdenacao[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, arqSaida, campoOrdenacao);
+            ret = ordenaVeiculos(arqEntrada, arqSaida, campoOrdenacao);
+            if (ret)
+                printf("Falha no processamento do arquivo.\n");
+            else
+                FF_binarioNaTela(arqSaida);
+            break;
+        }
+        case 18: {
+            // Lê entrada
+            char arqEntrada[100],
+                arqSaida[100],
+                campoOrdenacao[100];
+            int num,
+                ret;
+            sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, arqSaida, campoOrdenacao);
+            ret = ordenaLinhas(arqEntrada, arqSaida, campoOrdenacao);
+            if (ret)
+                printf("Falha no processamento do arquivo.\n");
+            else
+                FF_binarioNaTela(arqSaida);
+            break;
+        }
         default:
             printf("Opção digitada inválida!\n");
             break;

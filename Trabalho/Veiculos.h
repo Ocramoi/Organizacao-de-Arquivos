@@ -7,9 +7,11 @@
 // Estrutura dado do registro de cada veículo (Registro de Dados)
 typedef struct {
     char removido,
-        prefixo[6];
+        prefixo[6],
+        dataOriginal[11];
     int32_t quantidadeLugares,
-        codLinha;
+        codLinha,
+        tamRegistro;
     char *modelo,
         *categoria,
         *data;
@@ -66,5 +68,8 @@ int destroiCabecalhoVeiculos(CABECALHO_VEICULOS_t *cabecalho);
 
 /* "SELECT * from Veiculos JOIN Linhas WHERE ..." -> Seleciona e exibe registro do arquivo binário [arqTabela] de veículos com [prefixo] dado com pesquisa na árvore [arqArvore] */
 int selectJoinVeiculosLinhas(char *arqVeiculos, char *arqLinhas, char *campoVeiculos, char *campoLinha);
+
+/* Ordena veículos do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
+int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao);
 
 #endif // __VEICULOSARQ_H_

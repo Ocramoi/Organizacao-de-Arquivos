@@ -2,6 +2,7 @@
 #include "LeLinha.h"
 #include "TratamentoDeValores.h"
 #include "ArvoreB.h"
+#include "RadixSort.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -195,11 +196,10 @@ LINHA_t *leObjLinha(FILE *arq) {
     // Estrutura de linha
     LINHA_t *linha = malloc(sizeof(LINHA_t));
 
-    char removido;
-    fread(&removido, sizeof(char), 1, arq);
-    int32_t offset; fread(&offset, sizeof(int32_t), 1, arq);
-    if (removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
-        fseek(arq, offset, SEEK_CUR);
+    fread(&(linha->removido), sizeof(char), 1, arq);
+    fread(&(linha->tamRegistro), sizeof(int32_t), 1, arq);
+    if (linha->removido == '0') { // Confere se removido, o contabilizando e pulando para o próximo registro
+        fseek(arq, linha->tamRegistro, SEEK_CUR);
         free(linha);
         return NULL;
     }
@@ -640,5 +640,83 @@ int destroiCabecalhoLinhas(CABECALHO_LINHAS_t *cabecalho) {
     free(cabecalho->linha);
     free(cabecalho->nome);
     free(cabecalho);
+    return 0;
+}
+
+RetornaChave_f retornaCodLinha(void *linha) {
+    LINHA_t *obj = (LINHA_t*) linha;
+    return obj->codLinha + 1;
+}
+
+/* Ordena linhas do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
+int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
+    if (!arqEntrada || !arqSaida || !campoOrdenacao)
+        return 1;
+
+    FILE *tabelaLinhas = fopen(arqEntrada, "rb");
+    if (!tabelaLinhas)
+        return 1;
+
+    CABECALHO_LINHAS_t *cabecalho = leCabecalhoLinhas(tabelaLinhas);
+    if (!cabecalho) {
+        fclose(tabelaLinhas);
+        return 1;
+    }
+
+    if (cabecalho->status != '1') {
+        fclose(tabelaLinhas);
+        destroiCabecalhoLinhas(cabecalho);
+        return 1;
+    }
+
+    int contLinhas = 0;
+    LINHA_t **linhas = malloc(cabecalho->nroRegs * sizeof(LINHA_t*));
+
+    int64_t byteOffset = 82;
+    for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
+        LINHA_t *linha = leObjLinha(tabelaLinhas);
+        if (!linha)
+            continue;
+
+        linhas[contLinhas++] = linha;
+        byteOffset += linha->tamRegistro + 5;
+    }
+
+    radixSort((void**) linhas, sizeof(int32_t), contLinhas, &retornaCodLinha);
+
+    FILE *tabelaOrdenada = fopen(arqSaida, "wb+");
+
+    // Inicializa cabeçalho
+    int32_t nRems = 0;
+    fwrite("0", sizeof(char), 1, tabelaOrdenada);
+    fwrite(&byteOffset, sizeof(int64_t), 1, tabelaOrdenada);
+    fwrite(&contLinhas, sizeof(int32_t), 1, tabelaOrdenada);
+    fwrite(&nRems, sizeof(int32_t), 1, tabelaOrdenada);
+    fwrite(cabecalho->codigo, sizeof(char), 15, tabelaOrdenada);
+    fwrite(cabecalho->cartao, sizeof(char), 13, tabelaOrdenada);
+    fwrite(cabecalho->nome, sizeof(char), 13, tabelaOrdenada);
+    fwrite(cabecalho->linha, sizeof(char), 24, tabelaOrdenada);
+
+    for (int i = 0; i < contLinhas; ++i) {
+        fwrite(&(linhas[i]->removido), sizeof(char), 1, tabelaOrdenada);
+        fwrite(&(linhas[i]->tamRegistro), sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(&(linhas[i]->codLinha), sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(&(linhas[i]->cartao), sizeof(char), 1, tabelaOrdenada);
+
+        int32_t tamNome = linhas[i]->nomeLinha ? strlen(linhas[i]->nomeLinha) : 0,
+            tamCor = linhas[i]->corLinha ? strlen(linhas[i]->corLinha) : 0;
+        fwrite(&tamNome, sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(linhas[i]->nomeLinha, sizeof(char), tamNome, tabelaOrdenada);
+        fwrite(&tamCor, sizeof(int32_t), 1, tabelaOrdenada);
+        fwrite(linhas[i]->corLinha, sizeof(char), tamCor, tabelaOrdenada);
+        destroiLinha(linhas[i]);
+    } free(linhas);
+
+    fseek(tabelaOrdenada, 0, SEEK_SET);
+    fwrite("1", sizeof(char), 1, tabelaOrdenada);
+
+    fclose(tabelaLinhas); fclose(tabelaOrdenada);
+    destroiCabecalhoLinhas(cabecalho);
+
     return 0;
 }
