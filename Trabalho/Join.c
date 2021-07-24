@@ -128,9 +128,11 @@ int selectJoinVeiculosLinhasArvB(char *arqVeiculos, char *arqLinhas,
         return -1;
     }
 
+    // Fecha arquivo de linhas conferido
     fclose(tabelaLinhas);
     destroiCabecalhoLinhas(cabecalhoLinhas);
 
+    // Cria e confere árvore b de linhas
     ARVB_t *arvLinhas = populaArvB(indiceLinha);
     if (!arvLinhas) {
         fclose(tabelaVeiculos);
@@ -150,13 +152,16 @@ int selectJoinVeiculosLinhasArvB(char *arqVeiculos, char *arqLinhas,
         if (!veiculo)
             continue;
 
+        // Pesquisa linha de veículo na árvore b de linhas
         int64_t offsetAchado = pesquisaArvB(arvLinhas, veiculo->codLinha);
 
+        // Trata linha não achada
         if (offsetAchado < 0) {
             destroiVeiculo(veiculo);
             continue;
         }
 
+        // Contabiliza exibição
         exibido = 1;
         exibeDescreveVeiculo(cabecalhoVeiculos, veiculo);
         exibeLinhaOffset(arqLinhas, offsetAchado);
@@ -178,34 +183,48 @@ int selectJoinVeiculosLinhasArvB(char *arqVeiculos, char *arqLinhas,
 
 /* Realiza a ordenação e merge dos registros de veículos em [arqVeiculos] e linhas em [arqLinhas] com base no código de linha */
 int ordMerge(char *arqVeiculos, char *arqLinhas, char *campoVeiculos, char *campoLinha) {
+    // Realiza e confere ordenação inplace dos arquivos
     int aux = ordenaVeiculos(arqVeiculos, arqVeiculos, "codLinha");
     aux ^= ordenaLinhas(arqLinhas, arqLinhas, "codLinha");
     if (aux)
         return -1;
 
+    // Abre arquivos ordenados
     FILE *tabelaVeiculos = fopen(arqVeiculos, "rb"),
         *tabelaLinhas = fopen(arqLinhas, "rb");
 
+    // Lê cabeçalhos de arquivos
     CABECALHO_VEICULOS_t *cabecalhoVeiculos = leCabecalhoVeiculos(tabelaVeiculos);
     CABECALHO_LINHAS_t *cabecalhoLinhas = leCabecalhoLinhas(tabelaLinhas);
 
+    // Contagem de índice para percorrer os arquivos
     int idxVeiculos = 0,
         idxLinhas = 0;
 
+    // Lê objetos iniciais
     VEICULO_t *veiculo = leVeiculo(tabelaVeiculos);
     LINHA_t *linha = leObjLinha(tabelaLinhas);
 
+    // Variável auxiliar para contabilizar exibição
     char exibido = 0;
+
+    // Realiza merge entre registros
+
+    // Percorre até o fim de um dos arquivos
     while (idxVeiculos < cabecalhoVeiculos->nroRegs &&
            idxLinhas < cabecalhoLinhas->nroRegs) {
+        // Exibe caso códigos iguais
         if (veiculo->codLinha == linha->codLinha) {
+            // Contabiliza exibição
             exibido = 1;
             exibeDescreveVeiculo(cabecalhoVeiculos, veiculo);
             exibeDescreveLinha(cabecalhoLinhas, linha);
             printf("\n");
 
+            // Anda com "ponteiro" do veículo contabilizado
             idxVeiculos++;
 
+            // Lê próximo veículo se possível
             destroiVeiculo(veiculo);
             veiculo = NULL;
             if (idxVeiculos < cabecalhoVeiculos->nroRegs)
@@ -213,8 +232,12 @@ int ordMerge(char *arqVeiculos, char *arqLinhas, char *campoVeiculos, char *camp
             continue;
         }
 
+        // Lê próxima linha se necessário
         if (veiculo->codLinha > linha->codLinha) {
+            // Anda com "ponteiro" de linha contabilizada
             idxLinhas++;
+
+            // Lê próxima linha se possível
             destroiLinha(linha);
             linha = NULL;
             if (idxLinhas < cabecalhoLinhas->nroRegs)
@@ -222,8 +245,12 @@ int ordMerge(char *arqVeiculos, char *arqLinhas, char *campoVeiculos, char *camp
             continue;
         }
 
+        // Lê próximo veículo se necessário
         if (veiculo->codLinha < linha->codLinha) {
+            // Anda com "ponteiro" de veículo contabilizado
             idxVeiculos++;
+
+            // Lê próximo veículo se possível
             destroiVeiculo(veiculo);
             veiculo = NULL;
             if (idxVeiculos < cabecalhoVeiculos->nroRegs)
@@ -232,12 +259,14 @@ int ordMerge(char *arqVeiculos, char *arqLinhas, char *campoVeiculos, char *camp
         }
     }
 
+    // Libera memória em uso
     if (linha)
         destroiLinha(linha);
     if (veiculo)
         destroiVeiculo(veiculo);
-
     destroiCabecalhoLinhas(cabecalhoLinhas); destroiCabecalhoVeiculos(cabecalhoVeiculos);
+
+    // Fecha arquivos de registros
     fclose(tabelaLinhas); fclose(tabelaVeiculos);
 
     return !exibido;

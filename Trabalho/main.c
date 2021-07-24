@@ -319,7 +319,10 @@ int main(int argc, char **argv) {
             int num,
                 ret;
             sscanf(entrada, "%d %s %s %s %s", &opcao, arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+
+            // Seleciona e exibe registros pela condição de join
             ret = selectJoinVeiculosLinhas(arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+            // Trata possíveis mensagens de erro
             switch (ret) {
                 case -1:
                     printf("Falha no processamento do arquivo.\n");
@@ -340,7 +343,10 @@ int main(int argc, char **argv) {
             int num,
                 ret;
             sscanf(entrada, "%d %s %s %s %s %s", &opcao, arqVeiculos, arqLinhas, campoVeiculo, campoLinha, indiceLinha);
+
+            // Seleciona e exibe registros pela condição de join fazendo uso do arquivo de árvore b
             ret = selectJoinVeiculosLinhasArvB(arqVeiculos, arqLinhas, campoVeiculo, campoLinha, indiceLinha);
+            // Trata possíveis mensagens de erro
             switch (ret) {
                 case -1:
                     printf("Falha no processamento do arquivo.\n");
@@ -359,7 +365,10 @@ int main(int argc, char **argv) {
             int num,
                 ret;
             sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, arqSaida, campoOrdenacao);
+
+            // Ordena registros de veículo do arquivo de entrada e registra saída no arquivo de saída
             ret = ordenaVeiculos(arqEntrada, arqSaida, campoOrdenacao);
+            // Trata possíveis saídas de erro
             if (ret)
                 printf("Falha no processamento do arquivo.\n");
             else
@@ -374,7 +383,10 @@ int main(int argc, char **argv) {
             int num,
                 ret;
             sscanf(entrada, "%d %s %s %s", &opcao, arqEntrada, arqSaida, campoOrdenacao);
+
+            // Ordena registros de linha do arquivo de entrada e registra saída no arquivo de saída
             ret = ordenaLinhas(arqEntrada, arqSaida, campoOrdenacao);
+            // Trata possíveis saídas de erro
             if (ret)
                 printf("Falha no processamento do arquivo.\n");
             else
@@ -389,7 +401,10 @@ int main(int argc, char **argv) {
                 campoLinha[100];
             int ret;
             sscanf(entrada, "%d %s %s %s %s", &opcao, arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+
+            // Ordena registros dos arquivos inplace e realiza merge de registros (os exibindo)
             ret = ordMerge(arqVeiculos, arqLinhas, campoVeiculo, campoLinha);
+            // Trata possíveis saídas de erro
             switch (ret) {
                 case -1:
                     printf("Falha no processamento do arquivo.\n");

@@ -643,8 +643,11 @@ int destroiCabecalhoLinhas(CABECALHO_LINHAS_t *cabecalho) {
     return 0;
 }
 
+/* Retorna valor de código de linha (normalizado para possível -1) */
 RetornaChave_f retornaCodLinha(void *linha) {
+    // Realiza casting de linha
     LINHA_t *obj = (LINHA_t*) linha;
+    // Retorna código normalizado
     return obj->codLinha + 1;
 }
 
@@ -653,8 +656,10 @@ RetornaChave_f retornaCodLinha(void *linha) {
 LINHA_t **leListaLinhas(FILE *arquivo,
                         CABECALHO_LINHAS_t *cabecalho,
                         int *tamLista, int64_t *byteOffset) {
+    // Cria lista de linhas vazia
     LINHA_t **linhas = malloc(cabecalho->nroRegs * sizeof(LINHA_t*));
 
+    // Contabiliza registro a registro do arquivo, atualizando informações
     for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
         LINHA_t *linha = leObjLinha(arquivo);
         if (!linha)
@@ -669,13 +674,16 @@ LINHA_t **leListaLinhas(FILE *arquivo,
 
 /* Ordena linhas do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
 int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
+    // Confere parâmetros
     if (!arqEntrada || !arqSaida || !campoOrdenacao)
         return 1;
 
+    // Abre e confere arquivo
     FILE *tabelaLinhas = fopen(arqEntrada, "rb");
     if (!tabelaLinhas)
         return 1;
 
+    // Lê e confere cabeçalho
     CABECALHO_LINHAS_t *cabecalho = leCabecalhoLinhas(tabelaLinhas);
     if (!cabecalho) {
         fclose(tabelaLinhas);
@@ -688,14 +696,18 @@ int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
         return 1;
     }
 
+    // Inicializa informação de lista
     int contLinhas = 0;
     int64_t byteOffset = 82;
 
+    // Lê lista de linhas
     LINHA_t **linhas = leListaLinhas(tabelaLinhas, cabecalho, &contLinhas, &byteOffset);
     fclose(tabelaLinhas);
 
+    // Ordena lista
     radixSort((void**) linhas, sizeof(int32_t), contLinhas, &retornaCodLinha);
 
+    // Abre arquivo de saída
     FILE *tabelaOrdenada = fopen(arqSaida, "wb+");
 
     // Inicializa cabeçalho
@@ -709,6 +721,7 @@ int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     fwrite(cabecalho->nome, sizeof(char), 13, tabelaOrdenada);
     fwrite(cabecalho->linha, sizeof(char), 24, tabelaOrdenada);
 
+    // Escreve registro a registro
     for (int i = 0; i < contLinhas; ++i) {
         fwrite(&(linhas[i]->removido), sizeof(char), 1, tabelaOrdenada);
         fwrite(&(linhas[i]->tamRegistro), sizeof(int32_t), 1, tabelaOrdenada);
@@ -724,9 +737,11 @@ int ordenaLinhas(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
         destroiLinha(linhas[i]);
     } free(linhas);
 
+    // Atualiza condição de arquivo
     fseek(tabelaOrdenada, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, tabelaOrdenada);
 
+    // Libera memória utilizada
     fclose(tabelaOrdenada);
     destroiCabecalhoLinhas(cabecalho);
 

@@ -675,8 +675,11 @@ int destroiCabecalhoVeiculos(CABECALHO_VEICULOS_t *cabecalho) {
     return 0;
 }
 
+/* Retorna valor de código de linha (normalizado para possível -1) */
 RetornaChave_f retornaCodVeiculo(void *veiculo) {
+    // Realiza casting de veículos
     VEICULO_t *obj = (VEICULO_t *) veiculo;
+    // Retorna código normalizado
     return obj->codLinha + 1;
 }
 
@@ -685,8 +688,10 @@ RetornaChave_f retornaCodVeiculo(void *veiculo) {
 VEICULO_t **leListaVeiculos(FILE *arquivo,
                             CABECALHO_VEICULOS_t *cabecalho,
                             int *tamLista, int64_t *byteOffset) {
-
+    // Cria lista de veículos vazia
     VEICULO_t **veiculos = malloc(cabecalho->nroRegs * sizeof(VEICULO_t*));
+
+    // Contabiliza registro a registro do arquivo, atualizando informações
     for (int i = 0; i < cabecalho->nroRegs + cabecalho->nroRems; ++i) {
         VEICULO_t *veiculo = leVeiculo(arquivo);
         if (!veiculo)
@@ -701,13 +706,16 @@ VEICULO_t **leListaVeiculos(FILE *arquivo,
 
 /* Ordena veículos do arquivo de entrada [arqEntrada] com base no [campoOrdenacao] e escreve lista para arquivo [arqSaida] */
 int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
+    // Confere parâmetros
     if (!arqEntrada || !arqSaida || !campoOrdenacao)
         return 1;
 
+    // Abre e confere arquivo
     FILE *tabelaVeiculos = fopen(arqEntrada, "rb");
     if (!tabelaVeiculos)
         return 1;
 
+    // Lê e confere cabeçalho
     CABECALHO_VEICULOS_t *cabecalho = leCabecalhoVeiculos(tabelaVeiculos);
     if (!cabecalho) {
         fclose(tabelaVeiculos);
@@ -720,14 +728,18 @@ int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
         return 1;
     }
 
+    // Inicializa informação de lista
     int contVeiculos = 0;
     int64_t byteOffset = 175;
 
+    // Lê lista de veículo
     VEICULO_t **veiculos = leListaVeiculos(tabelaVeiculos, cabecalho, &contVeiculos, &byteOffset);
     fclose(tabelaVeiculos);
 
+    // Ordena lista
     radixSort((void**) veiculos, sizeof(int32_t), contVeiculos, &retornaCodVeiculo);
 
+    // Abre arquivo de saída
     FILE *tabelaOrdenada = fopen(arqSaida, "wb+");
 
     // Inicializa cabeçalho
@@ -743,6 +755,7 @@ int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
     fwrite(cabecalho->modelo, sizeof(char), 17, tabelaOrdenada);
     fwrite(cabecalho->categoria, sizeof(char), 20, tabelaOrdenada);
 
+    // Escreve registro a registro
     for (int i = 0; i < contVeiculos; ++i) {
         fwrite(&(veiculos[i]->removido), sizeof(char), 1, tabelaOrdenada);
         fwrite(&(veiculos[i]->tamRegistro), sizeof(int32_t), 1, tabelaOrdenada);
@@ -756,12 +769,15 @@ int ordenaVeiculos(char *arqEntrada, char *arqSaida, char *campoOrdenacao) {
         fwrite(veiculos[i]->modelo, sizeof(char), tamModelo, tabelaOrdenada);
         fwrite(&tamCategoria, sizeof(int32_t), 1, tabelaOrdenada);
         fwrite(veiculos[i]->categoria, sizeof(char), tamCategoria, tabelaOrdenada);
+
         destroiVeiculo(veiculos[i]);
     } free(veiculos);
 
+    // Atualiza condição de arquivo
     fseek(tabelaOrdenada, 0, SEEK_SET);
     fwrite("1", sizeof(char), 1, tabelaOrdenada);
 
+    // Libera memória utilizada
     fclose(tabelaOrdenada);
     destroiCabecalhoVeiculos(cabecalho);
 
