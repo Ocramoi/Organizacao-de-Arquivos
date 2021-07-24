@@ -1,6 +1,6 @@
 /*
 ** SCC0215 - Organização de arquivos
-** Trabalho 2
+** Trabalho 3
 **
 ** Alunos:
 ** - Marco Antônio Ribeiro de Toledo, RA: 11796419
